@@ -1,0 +1,338 @@
+/* Estilos mejorados para el PageBuilder con botones horizontales */
+
+/* Mejoras generales para el contenedor */
+.page-builder-container {
+  float: left;
+  width: 80%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Alineación de componentes en la barra superior */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  /* Reducido el padding */
+  background-color: #333;
+  color: white;
+  height: auto;
+}
+
+/* Botones de la barra de herramientas en horizontal */
+.toolbar-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  /* Reducido el gap */
+}
+
+/* Mejorar apariencia de los botones de acción */
+.toolbar-btn {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  /* Reducido el borde */
+  padding: 4px 8px;
+  /* Reducido el padding */
+  cursor: pointer;
+  font-size: 12px;
+  /* Reducido el tamaño de fuente */
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background-color: #3a7bd5;
+}
+
+/* Mejorar separador */
+.separator {
+  width: 1px;
+  height: 18px;
+  /* Reducido el alto */
+  background-color: rgba(255, 255, 255, 0.3);
+  margin: 0 5px;
+  /* Reducido el margen */
+}
+
+/* Pestañas principales (Componentes, Propiedades, etc.) */
+.panel-tabs {
+  display: flex;
+  flex-direction: row;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  padding: 5px 8px;
+  /* Reducido el padding */
+  gap: 5px;
+  /* Reducido el gap */
+}
+
+/* Estilo para los botones de pestaña */
+.tab-btn {
+  padding: 5px 10px;
+  /* Reducido el padding */
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  /* Reducido el borde */
+  cursor: pointer;
+  color: #333;
+  font-size: 12px;
+  /* Reducido el tamaño de fuente */
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.tab-btn.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #3a7bd5;
+}
+
+/* Panel para los componentes */
+.panel-content {
+  padding: 10px;
+  /* Reducido el padding */
+}
+
+/* Botones de componentes en horizontal */
+.component-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  /* Reducido el gap */
+  margin-bottom: 10px;
+  /* Reducido el margen */
+}
+
+/* Mejorar apariencia de los botones de componentes */
+.btn {
+  flex: 1 0 auto;
+  min-width: 80px;
+  /* Reducido el ancho mínimo */
+  padding: 6px 10px;
+  /* Reducido el padding */
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  /* Reducido el borde */
+  cursor: pointer;
+  color: #333;
+  /* Color de texto más oscuro para mejor contraste */
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 12px;
+  /* Reducido el tamaño de fuente */
+}
+
+.btn:hover {
+  background-color: #e9ecef;
+  /* Un poco más oscuro al pasar el ratón */
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Mejorar el área del canvas - Darle más protagonismo */
+.canvas-container {
+  flex: 1;
+  padding: 20px;
+  background-color: #f0f0f0;
+  display: block;
+  /* Cambiado de flex a block para evitar restricciones de altura */
+  justify-content: center;
+  align-items: flex-start;
+  /* Cambiado a flex-start para permitir scroll */
+  overflow-y: auto;
+  /* Añadir scroll vertical */
+  height: calc(100vh - 180px);
+  /* Aumentar el alto para darle más espacio */
+  margin-top: 10px;
+  /* Añadir margen superior */
+}
+
+.design-canvas {
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 2px solid #4a90e2 !important;
+  /* Borde azul más grueso y visible */
+  border: 1px solid #ddd;
+
+  min-height: 800px;
+  /* Altura mínima más grande que la anterior */
+  margin-bottom: 30px;
+  /* Añadir espacio abajo */
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+/* Opcional: para mejorar el comportamiento del scroll */
+.canvas-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.canvas-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.canvas-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.canvas-container::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Añadir línea punteada alrededor del área de dibujo de Konva */
+.konvajs-content {
+  margin: 0 auto;
+  position: relative;
+  outline: 2px dashed #4a90e2;
+  /* Borde punteado azul */
+  outline-offset: -2px;
+  /* Para que el outline se ajuste al borde */
+}
+
+/* Añadir un borde interno al canvas para marcar los límites */
+.konvajs-content:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  /* Para que no interfiera con el uso del canvas */
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  /* Borde interno semitransparente */
+  z-index: 1000;
+}
+
+/* Opcional: añadir regla visual para indicar la altura máxima utilizable */
+.konvajs-content:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2000px;
+  /* Debe coincidir con la altura del Stage que has definido */
+  border-top: 3px dashed #e74c3c;
+  /* Línea roja para indicar el límite de altura */
+  z-index: 1000;
+  pointer-events: none;
+}
+
+
+
+
+/*  Botton de crear grupo */
+.btn {
+  background-color: #7674FE;
+  color: #333;
+  /* Cambiado a un color oscuro para mejor legibilidad */
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-size: 13px;
+  box-shadow: 0 2px 5px rgba(118, 116, 254, 0.3);
+}
+
+.btn:hover {
+  background-color: #5957e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(118, 116, 254, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(118, 116, 254, 0.3);
+}
+
+
+
+/* Estilos para el modal de crear grupo */
+.grupo-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.grupo-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 280px;
+  /* Más pequeño */
+  max-width: 90%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: modalAppear 0.2s ease;
+}
+
+.grupo-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.grupo-modal-header h5 {
+  margin: 0;
+  font-size: 16px;
+  color: #555;
+}
+
+.grupo-modal-body {
+  padding: 15px;
+}
+
+.grupo-modal-footer {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #eaeaea;
+}
+
+.grupo-close-button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  line-height: 1;
+}
+
+.grupo-close-button:hover {
+  color: #333;
+}
+
+/* Animación suave para el modal */
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
