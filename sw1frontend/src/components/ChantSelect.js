@@ -243,6 +243,22 @@ const getBorderDirection = (tableData, intersectX, intersectY) => {
   return 'right'; // Fallback
 };
 
+// Nueva función para empujar el símbolo hacia afuera
+const pushSymbolOutside = (intersectionPoint, direction, offset) => {
+  switch (direction) {
+    case 'right':
+      return { x: intersectionPoint.x + offset, y: intersectionPoint.y };
+    case 'left':
+      return { x: intersectionPoint.x - offset, y: intersectionPoint.y };
+    case 'down':
+      return { x: intersectionPoint.x, y: intersectionPoint.y + offset };
+    case 'up':
+      return { x: intersectionPoint.x, y: intersectionPoint.y - offset };
+    default:
+      return intersectionPoint;
+  }
+};
+
 // Componente para renderizar relaciones entre tablas CON LÍNEAS ORTOGONALES
 const RelationshipLayer = ({ relationships, tables }) => {
   return (
@@ -264,51 +280,30 @@ const RelationshipLayer = ({ relationships, tables }) => {
         const startCenter = getTableCenter(fromTable);
         const endCenter = getTableCenter(toTable);
 
-        // Calcular puntos de intersección reales con los bordes de las tablas
+        // Calcular puntos de intersección
         const startIntersection = getIntersectionPoint(fromTable, endCenter.x, endCenter.y);
         const endIntersection = getIntersectionPoint(toTable, startCenter.x, startCenter.y);
 
-        // Calcular puntos para la línea ortogonal (usando los puntos de intersección)
-        const midX = (startIntersection.x + endIntersection.x) / 2;
+        // Determinar direcciones de los bordes
+        const startDirection = getBorderDirection(fromTable, startIntersection.x, startIntersection.y);
+        const endDirection = getBorderDirection(toTable, endIntersection.x, endIntersection.y);
+
+        // Empujar símbolos hacia afuera para que sean visibles
+        const startSymbolPos = pushSymbolOutside(startIntersection, startDirection, 10);
+        const endSymbolPos = pushSymbolOutside(endIntersection, endDirection, 10);
+
+        // La línea se dibuja directamente hasta el borde de la tabla
+        const finalStartPoint = startIntersection;
+        const finalEndPoint = endIntersection;
+
+        // Calcular puntos para la línea ortogonal
+        const finalMidX = (finalStartPoint.x + finalEndPoint.x) / 2;
         const points = [
-          { x: startIntersection.x, y: startIntersection.y },
-          { x: midX, y: startIntersection.y },
-          { x: midX, y: endIntersection.y },
-          { x: endIntersection.x, y: endIntersection.y }
+          finalStartPoint,
+          { x: finalMidX, y: finalStartPoint.y },
+          { x: finalMidX, y: finalEndPoint.y },
+          finalEndPoint
         ];
-
-        // Función para determinar la dirección del segmento en un punto específico
-        const getSegmentDirection = (pointIndex) => {
-          if (pointIndex >= points.length - 1) return 'right';
-
-          const current = points[pointIndex];
-          const next = points[pointIndex + 1];
-
-          const dx = next.x - current.x;
-          const dy = next.y - current.y;
-
-          if (Math.abs(dx) > Math.abs(dy)) {
-            return dx > 0 ? 'right' : 'left';
-          } else {
-            return dy > 0 ? 'down' : 'up';
-          }
-        };
-
-        // Función para calcular la posición exacta del símbolo basado en la dirección del segmento
-        const getSymbolPosition = (point, direction, offset = 0) => {
-          switch (direction) {
-            case 'right':
-              return { x: point.x + offset, y: point.y };
-            case 'left':
-              return { x: point.x - offset, y: point.y };
-            case 'down':
-              return { x: point.x, y: point.y + offset };
-            case 'up':
-              return { x: point.x, y: point.y - offset };
-            default:
-              return point;
-          }
-        };
 
         // Función mejorada para dibujar símbolos de cardinalidad
         const getCardinalitySymbol = (position, direction, isMany) => {
@@ -367,23 +362,64 @@ const RelationshipLayer = ({ relationships, tables }) => {
           }
         };
 
-        // Obtener direcciones de los segmentos inicial y final
-        const startDirection = getSegmentDirection(0); // Dirección del primer segmento
-        const endDirection = getSegmentDirection(points.length - 2); // Dirección del último segmento
+        // Función para dibujar símbolos de Herencia, Composición, Agregación
+        const getDiagramSymbol = (position, direction, type) => {
+          const { x, y } = position;
+          const size = 8; // Tamaño del símbolo
 
-        // Calcular posiciones exactas de los símbolos
-        const startSymbolPos = getSymbolPosition(points[0], startDirection, 8);
-        const endSymbolPos = getSymbolPosition(points[points.length - 1], endDirection, 8);
+          switch (type) {
+            case 'inheritance': // Triángulo de herencia
+              switch (direction) {
+                case 'right': return <polygon points={`${x},${y} ${x + size * 1.5},${y - size} ${x + size * 1.5},${y + size}`} fill="white" stroke="black" strokeWidth="2" />;
+                case 'left': return <polygon points={`${x},${y} ${x - size * 1.5},${y - size} ${x - size * 1.5},${y + size}`} fill="white" stroke="black" strokeWidth="2" />;
+                case 'down': return <polygon points={`${x},${y} ${x - size},${y + size * 1.5} ${x + size},${y + size * 1.5}`} fill="white" stroke="black" strokeWidth="2" />;
+                case 'up': return <polygon points={`${x},${y} ${x - size},${y - size * 1.5} ${x + size},${y - size * 1.5}`} fill="white" stroke="black" strokeWidth="2" />;
+                default: return null;
+              }
+
+            case 'composition': // Rombo relleno de composición
+            case 'aggregation': // Rombo vacío de agregación
+              const fill = type === 'composition' ? 'black' : 'white';
+              switch (direction) {
+                case 'right': return <polygon points={`${x},${y} ${x + size},${y - size / 2} ${x + size * 2},${y} ${x + size},${y + size / 2}`} fill={fill} stroke="black" strokeWidth="2" />;
+                case 'left': return <polygon points={`${x},${y} ${x - size},${y - size / 2} ${x - size * 2},${y} ${x - size},${y + size / 2}`} fill={fill} stroke="black" strokeWidth="2" />;
+                case 'down': return <polygon points={`${x},${y} ${x - size / 2},${y + size} ${x},${y + size * 2} ${x + size / 2},${y + size}`} fill={fill} stroke="black" strokeWidth="2" />;
+                case 'up': return <polygon points={`${x},${y} ${x - size / 2},${y - size} ${x},${y - size * 2} ${x + size / 2},${y - size}`} fill={fill} stroke="black" strokeWidth="2" />;
+                default: return null;
+              }
+
+            case 'association': // Flecha abierta de asociación
+              switch (direction) {
+                case 'right': return <polyline points={`${x + size},${y - size / 2} ${x},${y} ${x + size},${y + size / 2}`} fill="none" stroke="black" strokeWidth="2" />;
+                case 'left': return <polyline points={`${x - size},${y - size / 2} ${x},${y} ${x - size},${y + size / 2}`} fill="none" stroke="black" strokeWidth="2" />;
+                case 'down': return <polyline points={`${x - size / 2},${y + size} ${x},${y} ${x + size / 2},${y + size}`} fill="none" stroke="black" strokeWidth="2" />;
+                case 'up': return <polyline points={`${x - size / 2},${y - size} ${x},${y} ${x + size / 2},${y - size}`} fill="none" stroke="black" strokeWidth="2" />;
+                default: return null;
+              }
+
+            default: return null;
+          }
+        };
 
         // Determinar qué símbolos usar según el tipo de relación
         let startSymbol, endSymbol;
 
-        if (rel.type === 'one-to-one') {
+        // Lógica para los nuevos tipos de relación de diagrama de clases
+        if (['inheritance', 'composition', 'aggregation', 'association'].includes(rel.type)) {
+          // Para estos diagramas, el símbolo suele ir solo en el extremo final (destino)
+          startSymbol = null;
+          endSymbol = getDiagramSymbol(endSymbolPos, endDirection, rel.type);
+        }
+        // Lógica para relaciones de base de datos
+        else if (rel.type === 'one-to-one') {
           startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, false);
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, false);
         } else if (rel.type === 'one-to-many') {
           startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, false);
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, true);
+        } else if (rel.type === 'many-to-one') {
+          startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, true);
+          endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, false);
         } else if (rel.type === 'many-to-many') {
           startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, true);
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, true);
@@ -470,23 +506,39 @@ const generateSpringBootCodePreview = (tables, relationships) => {
       const endEntityNameLower = endEntityName.charAt(0).toLowerCase() + endEntityName.slice(1);
 
       if (startEntity) {
-        let annotation = '';
         switch (rel.type) {
+          // Relaciones de Base de Datos
           case 'one-to-one':
-            annotation = `\n    @OneToOne\n    private ${endEntityName} ${endEntityNameLower};`;
+            startEntity.relations += `\n    @OneToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
             break;
           case 'one-to-many':
             startEntity.imports.add('import java.util.List;');
-            annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}s;`;
+            startEntity.relations += `\n    @OneToMany\n    @JoinColumn(name = "${fromTable.name.toLowerCase()}_id")\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
           case 'many-to-many':
             startEntity.imports.add('import java.util.List;');
-            annotation = `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}s;`;
+            startEntity.relations += `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
-          default: // many-to-one
-            annotation = `\n    @ManyToOne\n    private ${endEntityName} ${endEntityNameLower};`;
+          case 'many-to-one':
+            startEntity.relations += `\n    @ManyToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
+            break;
+
+          // Relaciones de Diagrama de Clases
+          case 'inheritance':
+            startEntity.extendsClass = endEntityName; // Marcar para herencia
+            // No se añade anotación para este caso.
+            break;
+          case 'composition':
+            startEntity.imports.add('import java.util.List;');
+            startEntity.imports.add('import javax.persistence.CascadeType;');
+            startEntity.relations += `\n    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+            break;
+          case 'aggregation':
+          case 'association':
+            startEntity.imports.add('import java.util.List;');
+            startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+            break;
         }
-        startEntity.relations += annotation;
       }
     }
   }
@@ -494,7 +546,8 @@ const generateSpringBootCodePreview = (tables, relationships) => {
   // 3. Tercera pasada: Construir el string final
   for (const [entityName, content] of entityContents.entries()) {
     const importStatements = Array.from(content.imports).map(i => `${i};`).join('\n');
-    code += `${importStatements}\n\n@Entity\npublic class ${entityName} {\n\n${content.attributes}${content.relations}\n}\n\n`;
+    const extendsClause = content.extendsClass ? ` extends ${content.extendsClass}` : '';
+    code += `${importStatements}\n\n@Entity\npublic class ${entityName}${extendsClause} {\n\n${content.attributes}${content.relations}\n}\n\n`;
   }
 
   return code;
@@ -1013,13 +1066,21 @@ export const ChantSelect = () => {
 
                 <div className="mt-3">
                   <h6>Tipo de Relación</h6>
-                  <div className="btn-group d-flex" role="group">
-                    <button type="button" className={`btn btn-sm ${relationType === 'one-to-one' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('one-to-one')}>1 a 1</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'one-to-many' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('one-to-many')}>1 a N</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'many-to-many' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('many-to-many')}>N a M</button>
+                  <div className="relation-types-grid">
+                    {/* Relaciones de BD */}
+                    <button type="button" className={`btn btn-sm ${relationType === 'one-to-one' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('one-to-one')}>1 a 1</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'one-to-many' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('one-to-many')}>1 a N</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'many-to-one' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('many-to-one')}>N a 1</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'many-to-many' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('many-to-many')}>N a M</button>
+
+                    {/* Separador Visual */}
+                    <hr style={{ gridColumn: '1 / -1', margin: '8px 0', borderTop: '1px solid #ccc' }} />
+
+                    {/* Relaciones de Clases */}
+                    <button type="button" className={`btn btn-sm ${relationType === 'inheritance' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('inheritance')}>Herencia</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'composition' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('composition')}>Composición</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'aggregation' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('aggregation')}>Agregación</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'association' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('association')}>Asociación</button>
                   </div>
                 </div>
               </div>
@@ -1274,8 +1335,31 @@ export const ChantSelect = () => {
           color: #007bff;
         }
 
+        .btn-info {
+          background-color: #17a2b8;
+          border-color: #17a2b8;
+          color: white;
+        }
+
+        .btn-outline-info {
+          background-color: transparent;
+          border-color: #17a2b8;
+          color: #17a2b8;
+        }
+
         .btn-outline-primary:hover {
           background-color: #007bff;
+          color: white;
+        }
+
+        .relation-types-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+
+        .btn-outline-info:hover {
+          background-color: #17a2b8;
           color: white;
         }
       `}</style>

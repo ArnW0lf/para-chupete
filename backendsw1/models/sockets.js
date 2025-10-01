@@ -94,55 +94,19 @@ class Sockets {
 
             // Evento para actualización del canvas (CORREGIDO)
             socket.on('diagram:update', async (data) => {
-                try {
-                    const { groupId, tables, relationships, clientId = 'unknown' } = data;
+                const { groupId, tables, relationships } = data;
+                console.log(`diagram:update recibido - Usuario: ${uid}, Grupo: ${groupId}`);
 
-                    console.log(`diagram:update recibido - Usuario: ${uid}, Grupo: ${groupId}`);
-
-                    // Verificar membresía de manera más flexible
-                    const isMember = self.grupoRooms.has(groupId) &&
-                        self.grupoRooms.get(groupId).has(uid);
-
-                    if (!isMember) {
-                        console.log(`Usuario ${uid} no es miembro del grupo ${groupId}. Uniendo automáticamente...`);
-
-                        // Unir automáticamente al usuario
-                        socket.join(groupId);
-                        if (!self.grupoRooms.has(groupId)) {
-                            self.grupoRooms.set(groupId, new Set());
-                        }
-                        self.grupoRooms.get(groupId).add(uid);
-
-                        if (!self.userRooms.has(uid)) {
-                            self.userRooms.set(uid, new Set());
-                        }
-                        self.userRooms.get(uid).add(groupId);
-
-                        console.log(`Usuario ${uid} unido automáticamente a grupo ${groupId}`);
-                    }
-
-                    // Agregar a la cola de operaciones
-                    const operation = {
-                        groupId,
-                        tables: tables || [],
-                        relationships: relationships || [],
-                        clientId,
-                        timestamp: Date.now(),
-                        userId: uid
-                    };
-
-                    self.addToOperationQueue(groupId, operation);
-
-                    // Procesar la operación
-                    await self.processGroupOperation(groupId, socket);
-
-                } catch (error) {
-                    console.error('Error al manejar diagram:update:', error);
-                    socket.emit('diagram:error', {
-                        error: 'Error al procesar actualización',
-                        groupId: data.groupId
-                    });
+                if (!groupId) {
+                    return console.log('diagram:update ignorado, no hay groupId');
                 }
+
+                // Retransmitir a todos en la sala del grupo, EXCEPTO al que lo envió
+                socket.to(groupId).emit('diagram:updated', {
+                    groupId,
+                    tables,
+                    relationships
+                });
             });
 
             // Escuchar cuando un usuario crea un nuevo grupo

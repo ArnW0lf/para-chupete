@@ -382,6 +382,7 @@ public class ${mainClassName} {
         // 7. Generar entidades
         console.log('Generando entidades...');
         for (const table of tables) {
+            if (!table.name) continue; // Saltar tablas sin nombre
             // Asegurar nombre válido para la entidad
             const entityName = table.name || `Table${table.id.slice(-4)}`;
             let imports = new Set(['javax.persistence.*']);
@@ -415,6 +416,7 @@ public class ${mainClassName} {
                 imports,
                 attributes,
                 relations: '',
+                extendsClass: null, // Añadir para manejar herencia
                 tableId: table.id
             });
         }
@@ -445,29 +447,40 @@ public class ${mainClassName} {
             }
 
             const endEntityNameLower = endEntityName.charAt(0).toLowerCase() + endEntityName.slice(1);
-            let annotation = '';
 
             switch (rel.type) {
                 case 'one-to-one':
-                    annotation = `\n    @OneToOne\n    private ${endEntityName} ${endEntityNameLower};`;
+                    startEntity.relations += `\n    @OneToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
                     break;
                 case 'one-to-many':
                     startEntity.imports.add('java.util.List');
-                    annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    startEntity.relations += `\n    @OneToMany\n    @JoinColumn(name = "${startEntityName.toLowerCase()}_id")\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
                 case 'many-to-one':
-                    annotation = `\n    @ManyToOne\n    private ${endEntityName} ${endEntityNameLower};`;
+                    startEntity.relations += `\n    @ManyToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
                     break;
                 case 'many-to-many':
                     startEntity.imports.add('java.util.List');
-                    annotation = `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    startEntity.relations += `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    break;
+                // Nuevos tipos para Diagrama de Clases
+                case 'inheritance':
+                    startEntity.extendsClass = endEntityName; // Marcar para herencia
+                    break;
+                case 'composition':
+                    startEntity.imports.add('java.util.List');
+                    startEntity.imports.add('javax.persistence.CascadeType');
+                    startEntity.relations += `\n    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    break;
+                case 'aggregation':
+                case 'association':
+                    startEntity.imports.add('java.util.List');
+                    startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
                 default:
                     console.log('Tipo de relación no reconocido:', rel.type);
                     continue;
             }
-
-            startEntity.relations += annotation;
         }
 
         // 9. Escribir archivos de entidad
@@ -477,12 +490,13 @@ public class ${mainClassName} {
                 .map(imp => imp.endsWith('*') ? `import ${imp};` : `import ${imp};`)
                 .join('\n');
 
+            const extendsClause = content.extendsClass ? ` extends ${content.extendsClass}` : '';
             const finalContent = `package ${packagePath.replace(/\//g, '.')}.entities;
 
 ${importStatements}
 
 @Entity
-public class ${entityName} {
+public class ${entityName}${extendsClause} {
 ${content.attributes}${content.relations}
     
     // Constructores
