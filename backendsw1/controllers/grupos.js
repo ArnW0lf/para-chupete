@@ -489,23 +489,45 @@ public class ${mainClassName} {
         // 9. Escribir archivos de entidad
         console.log('Escribiendo archivos de entidad...');
         for (const [entityName, content] of entityContents.entries()) {
+            let gettersAndSetters = '\n    // Getters y Setters\n';
+            const allFields = (content.attributes + content.relations).trim();
+            const fieldRegex = /private\s+([\w<>\[\]]+)\s+([\w]+);/g;
+            let match;
+
+            while ((match = fieldRegex.exec(allFields)) !== null) {
+                const fieldType = match[1];
+                const fieldName = match[2];
+                const capitalizedFieldName = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+
+                // Getter
+                gettersAndSetters += `
+    public ${fieldType} get${capitalizedFieldName}() {
+        return this.${fieldName};
+    }
+`;
+                // Setter
+                gettersAndSetters += `
+    public void set${capitalizedFieldName}(${fieldType} ${fieldName}) {
+        this.${fieldName} = ${fieldName};
+    }
+`;
+            }
+
             const importStatements = Array.from(content.imports)
                 .map(imp => imp.endsWith('*') ? `import ${imp};` : `import ${imp};`)
                 .join('\n');
 
             const finalContent = `package ${packagePath.replace(/\//g, '.')}.entities;
 
-${importStatements}
+${importStatements.trim()}
 
 @Entity
 public class ${entityName} {
-${content.attributes}${content.relations}
+${(content.attributes + content.relations).trim()}
     
     // Constructores
     public ${entityName}() {}
-    
-    // Getters y Setters
-    // (Se pueden generar con Lombok o manualmente)
+${gettersAndSetters}
 }`;
 
             const entityPath = path.join(entityJavaPath, `${entityName}.java`);
