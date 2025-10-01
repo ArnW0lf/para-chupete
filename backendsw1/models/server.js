@@ -28,7 +28,7 @@ class Server {
         this.app.use(express.static(path.resolve(__dirname, '../public')));
 
         this.app.use(cors({
-            origin: '*',  // O especifica los orígenes permitidos
+            origin: process.env.FRONTEND_URL || '*',  // Permitir origen desde variable de entorno
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
             allowedHeaders: ['Content-Type', 'Authorization', 'x-token']  // Agrega 'x-token' aquí
         }));

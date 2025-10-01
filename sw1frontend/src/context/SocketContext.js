@@ -11,41 +11,41 @@ export const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
 
-    const { socket, online, conectarSocket, desconectarSocket } = useSocket('http://localhost:8080');
-    const { auth } = useContext( AuthContext );
-    const { dispatch } = useContext( ChatConext );
-    useEffect(() => {  
-        if( auth.logged ) {
-            conectarSocket(); 
+    const { socket, online, conectarSocket, desconectarSocket } = useSocket(process.env.REACT_APP_SOCKET_URL);
+    const { auth } = useContext(AuthContext);
+    const { dispatch } = useContext(ChatConext);
+    useEffect(() => {
+        if (auth.logged) {
+            conectarSocket();
             console.log('conectado')
         }
-    }, [ auth, conectarSocket ]);
+    }, [auth, conectarSocket]);
 
     useEffect(() => {
-        
-        if( !auth.logged ) {
-            desconectarSocket(); 
+
+        if (!auth.logged) {
+            desconectarSocket();
         }
-    }, [ auth, desconectarSocket ])
-    
+    }, [auth, desconectarSocket])
+
     useEffect(() => {
         // Escuchar los cambios en los usuarios conectados
-        socket?.on('lista-usuarios', ( usuarios) => {
-           dispatch({
+        socket?.on('lista-usuarios', (usuarios) => {
+            dispatch({
                 type: types.usuairiosCargados,
                 payload: usuarios
-           })
+            })
         })
-    }, [ socket, dispatch ])
+    }, [socket, dispatch])
 
     useEffect(() => {
-      socket?.on('mensaje-personal', ( mensaje ) => {
-        dispatch({
-            type : types.nuevoMensaje,
-            payload: mensaje
-        })     
-        // TODO: Mover el scroll al final
-      })
+        socket?.on('mensaje-personal', (mensaje) => {
+            dispatch({
+                type: types.nuevoMensaje,
+                payload: mensaje
+            })
+            // TODO: Mover el scroll al final
+        })
     }, [socket, dispatch])
 
     // useEffect(() => {
@@ -53,7 +53,7 @@ export const SocketProvider = ({ children }) => {
 
     //   })
     // }, [socket, dispatch])
-    
+
 
     // Dentro del SocketProvider, añadir nuevos useEffect para eventos de grupos
 
@@ -66,11 +66,11 @@ export const SocketProvider = ({ children }) => {
             });
         });
     }, [socket, dispatch]);
-    
-    
+
+
     return (
         <SocketContext.Provider value={{ socket, online }}>
-            { children }
+            {children}
         </SocketContext.Provider>
     )
 }
