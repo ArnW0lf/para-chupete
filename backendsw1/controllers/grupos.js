@@ -426,12 +426,14 @@ public class ${mainClassName} {
         for (const rel of relationships) {
             console.log('Procesando relación:', rel);
 
-            // CORRECCIÓN: Usar los nombres correctos que envía el frontend
-            const startTable = tableMap.get(rel.fromTableId || rel.fromComponentId);
-            const endTable = tableMap.get(rel.toTableId || rel.endComponentId);
+            // CORRECCIÓN: Añadir compatibilidad para la estructura de datos antigua y nueva.
+            const fromTableId = rel.fromTableId || rel.fromComponentId;
+            const toTableId = rel.toTableId || rel.endComponentId;
+            const startTable = tableMap.get(fromTableId);
+            const endTable = tableMap.get(toTableId);
 
             if (!startTable || !endTable) {
-                console.log('Tabla de origen o destino no encontrada');
+                console.warn(`Tablas para la relación no encontradas. From: ${fromTableId}, To: ${toTableId}`);
                 continue;
             }
 
@@ -477,6 +479,20 @@ public class ${mainClassName} {
                     startEntity.imports.add('java.util.List');
                     startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Mapear relaciones UML a anotaciones JPA
+                case 'association':
+                case 'aggregation':
+                case 'composition':
+                    // Estas relaciones se tratan a menudo como One-to-Many por defecto en este contexto
+                    startEntity.imports.add('java.util.List');
+                    annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    break;
+                case 'generalization':
+                    // La herencia se maneja con 'extends' en Java, no con una anotación de campo.
+                    // Esta lógica se podría expandir en el futuro. Por ahora, no se añade campo.
+                    break;
+                // --- FIN DE LA CORRECCIÓN ---
                 default:
                     console.log('Tipo de relación no reconocido:', rel.type);
                     continue;
@@ -486,6 +502,30 @@ public class ${mainClassName} {
         // 9. Escribir archivos de entidad
         console.log('Escribiendo archivos de entidad...');
         for (const [entityName, content] of entityContents.entries()) {
+            let gettersAndSetters = '\n    // Getters y Setters\n';
+            const allFields = (content.attributes + content.relations).trim();
+            const fieldRegex = /private\s+([\w<>\[\]]+)\s+([\w]+);/g;
+            let match;
+
+            while ((match = fieldRegex.exec(allFields)) !== null) {
+                const fieldType = match[1];
+                const fieldName = match[2];
+                const capitalizedFieldName = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+
+                // Getter
+                gettersAndSetters += `
+    public ${fieldType} get${capitalizedFieldName}() {
+        return this.${fieldName};
+    }
+`;
+                // Setter
+                gettersAndSetters += `
+    public void set${capitalizedFieldName}(${fieldType} ${fieldName}) {
+        this.${fieldName} = ${fieldName};
+    }
+`;
+            }
+
             const importStatements = Array.from(content.imports)
                 .map(imp => imp.endsWith('*') ? `import ${imp};` : `import ${imp};`)
                 .join('\n');
@@ -493,17 +533,20 @@ public class ${mainClassName} {
             const extendsClause = content.extendsClass ? ` extends ${content.extendsClass}` : '';
             const finalContent = `package ${packagePath.replace(/\//g, '.')}.entities;
 
-${importStatements}
+${importStatements.trim()}
 
 @Entity
+<<<<<<< HEAD
 public class ${entityName}${extendsClause} {
 ${content.attributes}${content.relations}
+=======
+public class ${entityName} {
+${(content.attributes + content.relations).trim()}
+>>>>>>> version-colaborativa-estable
     
     // Constructores
     public ${entityName}() {}
-    
-    // Getters y Setters
-    // (Se pueden generar con Lombok o manualmente)
+${gettersAndSetters}
 }`;
 
             const entityPath = path.join(entityJavaPath, `${entityName}.java`);

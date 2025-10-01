@@ -271,8 +271,11 @@ const RelationshipLayer = ({ relationships, tables }) => {
       pointerEvents: 'none'
     }}>
       {relationships.map((rel) => {
-        const fromTable = tables.find(t => t.id === rel.fromTableId);
-        const toTable = tables.find(t => t.id === rel.toTableId);
+        // CORRECCIÓN: Añadir compatibilidad para la estructura de datos antigua y nueva.
+        const fromTableId = rel.fromTableId || rel.fromComponentId;
+        const toTableId = rel.toTableId || rel.endComponentId;
+        const fromTable = tables.find(t => t.id === fromTableId);
+        const toTable = tables.find(t => t.id === toTableId);
 
         if (!fromTable || !toTable) return null;
 
@@ -367,6 +370,7 @@ const RelationshipLayer = ({ relationships, tables }) => {
           const { x, y } = position;
           const size = 8; // Tamaño del símbolo
 
+<<<<<<< HEAD
           switch (type) {
             case 'inheritance': // Triángulo de herencia
               switch (direction) {
@@ -400,6 +404,15 @@ const RelationshipLayer = ({ relationships, tables }) => {
             default: return null;
           }
         };
+=======
+        // CORRECCIÓN: Acortar la línea para que el símbolo se dibuje en el borde.
+        // El símbolo se dibujará en el punto de intersección real.
+        const symbolOffset = 15; // Espacio que ocupará el símbolo.
+        const startSymbolPos = points[0]; // El símbolo va en el borde.
+        const endSymbolPos = points[points.length - 1]; // El símbolo va en el borde.
+        points[0] = getSymbolPosition(points[0], startDirection, -symbolOffset); // Acortar la línea.
+        points[points.length - 1] = getSymbolPosition(points[points.length - 1], endDirection, -symbolOffset); // Acortar la línea.
+>>>>>>> version-colaborativa-estable
 
         // Determinar qué símbolos usar según el tipo de relación
         let startSymbol, endSymbol;
@@ -423,6 +436,41 @@ const RelationshipLayer = ({ relationships, tables }) => {
         } else if (rel.type === 'many-to-many') {
           startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, true);
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, true);
+        } else {
+          // Lógica para nuevos tipos de relación UML
+          const isDashed = rel.type === 'dependency' || rel.type === 'realization';
+          const strokeDasharray = isDashed ? "8, 8" : "none";
+
+          // El símbolo de inicio (origen) para Agregación y Composición
+          if (rel.type === 'aggregation' || rel.type === 'composition') {
+            startSymbol = (
+              <g transform={`translate(${startSymbolPos.x}, ${startSymbolPos.y}) rotate(${getRotationAngle(startDirection)})`}>
+                <polygon
+                  points="-10,0 0,6 10,0 0,-6"
+                  fill={rel.type === 'composition' ? 'black' : 'white'}
+                  stroke="black"
+                  strokeWidth="2"
+                />
+              </g>
+            );
+          }
+
+          // El símbolo de fin (destino) para Herencia, Dependencia y Asociación
+          if (['generalization', 'realization', 'dependency', 'association'].includes(rel.type)) {
+            endSymbol = (
+              <g transform={`translate(${endSymbolPos.x}, ${endSymbolPos.y}) rotate(${getRotationAngle(endDirection)})`}>
+                <polygon
+                  points={rel.type === 'generalization' || rel.type === 'realization' ? "-12,7 0,0 -12,-7" : "-10,5 0,0 -10,-5"}
+                  fill={rel.type === 'generalization' ? 'white' : 'none'}
+                  stroke="black"
+                  strokeWidth="2"
+                />
+              </g>
+            );
+          }
+
+          // Sobrescribir el return para manejar líneas punteadas y símbolos UML
+          return <UmlRelationship key={rel.id} points={points} strokeDasharray={strokeDasharray} startSymbol={startSymbol} endSymbol={endSymbol} />;
         }
 
         return (
@@ -433,6 +481,7 @@ const RelationshipLayer = ({ relationships, tables }) => {
               fill="none"
               stroke="black"
               strokeWidth="2"
+              strokeDasharray={rel.type === 'dependency' ? "8, 8" : "none"}
             />
 
             {/* Símbolos de cardinalidad en las posiciones correctas */}
@@ -447,6 +496,38 @@ const RelationshipLayer = ({ relationships, tables }) => {
       })}
     </svg>
   );
+};
+
+// Componente específico para relaciones UML para mayor claridad
+const UmlRelationship = ({ key, points, strokeDasharray, startSymbol, endSymbol }) => {
+  return (
+    <g key={key}>
+      <polyline
+        points={points.map(p => `${p.x},${p.y}`).join(' ')}
+        fill="none"
+        stroke="black"
+        strokeWidth="2"
+        strokeDasharray={strokeDasharray}
+      />
+      {startSymbol}
+      {endSymbol}
+    </g>
+  );
+};
+
+// Función para obtener el ángulo de rotación para los símbolos
+const getRotationAngle = (direction) => {
+  switch (direction) {
+    case 'left':
+      return 180;
+    case 'down':
+      return 90;
+    case 'up':
+      return 270;
+    case 'right':
+    default:
+      return 0;
+  }
 };
 
 // Función para generar una previsualización del código Spring Boot
@@ -538,6 +619,26 @@ const generateSpringBootCodePreview = (tables, relationships) => {
             startEntity.imports.add('import java.util.List;');
             startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
+<<<<<<< HEAD
+=======
+          // --- INICIO DE LA CORRECCIÓN ---
+          // Añadir lógica UML a la vista previa para consistencia.
+          case 'association':
+          case 'aggregation':
+          case 'composition':
+            // Tratar como One-to-Many por defecto en la vista previa.
+            startEntity.imports.add('import java.util.List;');
+            annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}s;`;
+            break;
+          case 'generalization':
+            // La herencia no añade un campo, pero se podría añadir un comentario.
+            // Por ahora, no se hace nada para mantenerlo simple.
+            break;
+          // --- FIN DE LA CORRECCIÓN ---
+          default:
+            // El 'default' anterior para many-to-one era incorrecto. Se elimina.
+            console.log(`Tipo de relación no manejado en la vista previa: ${rel.type}`);
+>>>>>>> version-colaborativa-estable
         }
       }
     }
@@ -558,12 +659,9 @@ export const ChantSelect = () => {
   const { socket } = useContext(SocketContext);
   const { chatState } = useContext(ChatConext);
 
-  // Estado para tablas y relaciones
   const [tables, setTables] = useState([]);
   const [relationships, setRelationships] = useState([]);
-
   const [selectedId, setSelectedId] = useState(null);
-  // const [selectedComponentIndex, setSelectedComponentIndex] = useState(-1);
   const [activePanel, setActivePanel] = useState('components');
   const [relationshipStartPoint, setRelationshipStartPoint] = useState(null);
   const [activeTool, setActiveTool] = useState('select');
@@ -571,7 +669,6 @@ export const ChantSelect = () => {
   const [editingTarget, setEditingTarget] = useState(null);
   const [relationType, setRelationType] = useState('one-to-many');
 
-  // Estado para el modo de interacción (similar a UmlDashboard)
   const [mode, setMode] = useState({ name: 'IDLE' });
   const initialPos = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
@@ -580,8 +677,6 @@ export const ChantSelect = () => {
   useEffect(() => {
     if (chatState.grupoActivo && chatState.contenidoGrupo) {
       const savedContent = chatState.contenidoGrupo;
-      // El backend guarda 'components', pero el lienzo usa 'tables' y 'relationships'
-      // Hacemos la conversión aquí.
       setTables(savedContent.tables || savedContent.components || []);
       setRelationships(savedContent.relationships || []);
     } else {
@@ -593,15 +688,15 @@ export const ChantSelect = () => {
   // Escuchar cambios de otros usuarios
   useEffect(() => {
     if (socket) {
-      socket.on('diagram:updated', (data) => {
-        if (data.groupId === chatState.grupoActivo) {
-          // Actualizar el estado local con los datos recibidos
+      const handleDiagramUpdate = (data) => {
+        // Asegurarse de que la actualización es para el grupo activo y no es un eco del propio cliente.
+        if (data.groupId === chatState.grupoActivo && data.senderId !== socket.id) {
           setTables(data.tables || []);
           setRelationships(data.relationships || []);
         }
-      });
+      };
+      socket.on('diagram:updated', handleDiagramUpdate);
     }
-
     return () => {
       if (socket) {
         socket.off('diagram:updated');
@@ -632,12 +727,12 @@ export const ChantSelect = () => {
 
     // Transmitir por socket si hay un grupo activo
     if (chatState.grupoActivo && !isIntermediate) {
-      // Usamos un timeout para asegurarnos que el estado se ha propagado antes de emitir
       setTimeout(() => {
         socket.emit('diagram:update', {
           groupId: chatState.grupoActivo,
           tables: newTables,
-          relationships: newRelationships
+          relationships: newRelationships,
+          senderId: socket.id // Incluir senderId para evitar ecos
         });
       }, 0);
     }
@@ -1081,6 +1176,20 @@ export const ChantSelect = () => {
                     <button type="button" className={`btn btn-sm ${relationType === 'composition' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('composition')}>Composición</button>
                     <button type="button" className={`btn btn-sm ${relationType === 'aggregation' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('aggregation')}>Agregación</button>
                     <button type="button" className={`btn btn-sm ${relationType === 'association' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('association')}>Asociación</button>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <h6>Relaciones UML</h6>
+                  <div className="btn-group d-flex" role="group">
+                    <button type="button" className={`btn btn-sm ${relationType === 'association' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setRelationType('association')}>Asociación</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'aggregation' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setRelationType('aggregation')}>Agregación</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'composition' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setRelationType('composition')}>Composición</button>
+                    <button type="button" className={`btn btn-sm ${relationType === 'generalization' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setRelationType('generalization')}>Herencia</button>
                   </div>
                 </div>
               </div>
