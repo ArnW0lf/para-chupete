@@ -479,20 +479,6 @@ public class ${mainClassName} {
                     startEntity.imports.add('java.util.List');
                     startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Mapear relaciones UML a anotaciones JPA
-                case 'association':
-                case 'aggregation':
-                case 'composition':
-                    // Estas relaciones se tratan a menudo como One-to-Many por defecto en este contexto
-                    startEntity.imports.add('java.util.List');
-                    annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
-                    break;
-                case 'generalization':
-                    // La herencia se maneja con 'extends' en Java, no con una anotación de campo.
-                    // Esta lógica se podría expandir en el futuro. Por ahora, no se añade campo.
-                    break;
-                // --- FIN DE LA CORRECCIÓN ---
                 default:
                     console.log('Tipo de relación no reconocido:', rel.type);
                     continue;
@@ -536,14 +522,8 @@ public class ${mainClassName} {
 ${importStatements.trim()}
 
 @Entity
-<<<<<<< HEAD
 public class ${entityName}${extendsClause} {
-${content.attributes}${content.relations}
-=======
-public class ${entityName} {
 ${(content.attributes + content.relations).trim()}
->>>>>>> version-colaborativa-estable
-    
     // Constructores
     public ${entityName}() {}
 ${gettersAndSetters}
