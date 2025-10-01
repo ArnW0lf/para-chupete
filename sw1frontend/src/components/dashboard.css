@@ -311,3 +311,11 @@
 .d-flex {
   display: flex;
 }
+
+/* Estilo para mostrar el ID del grupo en la barra lateral */
+.group-id-display {
+  font-size: 10px;
+  color: #888;
+  display: block;
+  margin-top: 2px;
+}

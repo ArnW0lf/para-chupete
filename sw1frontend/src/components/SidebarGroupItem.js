@@ -39,6 +39,9 @@ export const SidebarGroupItem = ({ grupo }) => {
                 </div>
                 <div className="chat_ib">
                     <h5>{grupo.nombre}</h5>
+                    <span className="group-id-display" title="ID del Grupo">
+                        ID: {grupo._id}
+                    </span>
                 </div>
             </div>
         </div>

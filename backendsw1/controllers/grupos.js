@@ -424,12 +424,14 @@ public class ${mainClassName} {
         for (const rel of relationships) {
             console.log('Procesando relación:', rel);
 
-            // CORRECCIÓN: Usar los nombres correctos que envía el frontend
-            const startTable = tableMap.get(rel.fromTableId || rel.fromComponentId);
-            const endTable = tableMap.get(rel.toTableId || rel.endComponentId);
+            // CORRECCIÓN: Añadir compatibilidad para la estructura de datos antigua y nueva.
+            const fromTableId = rel.fromTableId || rel.fromComponentId;
+            const toTableId = rel.toTableId || rel.endComponentId;
+            const startTable = tableMap.get(fromTableId);
+            const endTable = tableMap.get(toTableId);
 
             if (!startTable || !endTable) {
-                console.log('Tabla de origen o destino no encontrada');
+                console.warn(`Tablas para la relación no encontradas. From: ${fromTableId}, To: ${toTableId}`);
                 continue;
             }
 
@@ -462,6 +464,20 @@ public class ${mainClassName} {
                     startEntity.imports.add('java.util.List');
                     annotation = `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Mapear relaciones UML a anotaciones JPA
+                case 'association':
+                case 'aggregation':
+                case 'composition':
+                    // Estas relaciones se tratan a menudo como One-to-Many por defecto en este contexto
+                    startEntity.imports.add('java.util.List');
+                    annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    break;
+                case 'generalization':
+                    // La herencia se maneja con 'extends' en Java, no con una anotación de campo.
+                    // Esta lógica se podría expandir en el futuro. Por ahora, no se añade campo.
+                    break;
+                // --- FIN DE LA CORRECCIÓN ---
                 default:
                     console.log('Tipo de relación no reconocido:', rel.type);
                     continue;
