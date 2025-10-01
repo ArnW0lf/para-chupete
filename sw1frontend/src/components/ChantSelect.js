@@ -370,7 +370,6 @@ const RelationshipLayer = ({ relationships, tables }) => {
           const { x, y } = position;
           const size = 8; // Tamaño del símbolo
 
-<<<<<<< HEAD
           switch (type) {
             case 'inheritance': // Triángulo de herencia
               switch (direction) {
@@ -404,15 +403,6 @@ const RelationshipLayer = ({ relationships, tables }) => {
             default: return null;
           }
         };
-=======
-        // CORRECCIÓN: Acortar la línea para que el símbolo se dibuje en el borde.
-        // El símbolo se dibujará en el punto de intersección real.
-        const symbolOffset = 15; // Espacio que ocupará el símbolo.
-        const startSymbolPos = points[0]; // El símbolo va en el borde.
-        const endSymbolPos = points[points.length - 1]; // El símbolo va en el borde.
-        points[0] = getSymbolPosition(points[0], startDirection, -symbolOffset); // Acortar la línea.
-        points[points.length - 1] = getSymbolPosition(points[points.length - 1], endDirection, -symbolOffset); // Acortar la línea.
->>>>>>> version-colaborativa-estable
 
         // Determinar qué símbolos usar según el tipo de relación
         let startSymbol, endSymbol;
@@ -619,26 +609,6 @@ const generateSpringBootCodePreview = (tables, relationships) => {
             startEntity.imports.add('import java.util.List;');
             startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
-<<<<<<< HEAD
-=======
-          // --- INICIO DE LA CORRECCIÓN ---
-          // Añadir lógica UML a la vista previa para consistencia.
-          case 'association':
-          case 'aggregation':
-          case 'composition':
-            // Tratar como One-to-Many por defecto en la vista previa.
-            startEntity.imports.add('import java.util.List;');
-            annotation = `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}s;`;
-            break;
-          case 'generalization':
-            // La herencia no añade un campo, pero se podría añadir un comentario.
-            // Por ahora, no se hace nada para mantenerlo simple.
-            break;
-          // --- FIN DE LA CORRECCIÓN ---
-          default:
-            // El 'default' anterior para many-to-one era incorrecto. Se elimina.
-            console.log(`Tipo de relación no manejado en la vista previa: ${rel.type}`);
->>>>>>> version-colaborativa-estable
         }
       }
     }
