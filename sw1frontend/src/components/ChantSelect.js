@@ -1066,6 +1066,47 @@ export const ChantSelect = () => {
     }
   };
 
+  const handleExportFlutterCode = async () => {
+    if (!chatState.grupoActivo) {
+      return alert('Por favor, seleccione un grupo para generar el frontend.');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || '';
+      // Llamada al nuevo endpoint para Flutter
+      const resp = await fetch(`${process.env.REACT_APP_API_URL}/grupos/${chatState.grupoActivo}/generar-flutter`, {
+        method: 'GET',
+        headers: {
+          'x-token': token,
+        },
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        try {
+          const jsonError = JSON.parse(errorText);
+          throw new Error(jsonError.msg || 'Error desconocido en el servidor.');
+        } catch (e) {
+          throw new Error(`Error del servidor: ${errorText.substring(0, 150)}...`);
+        }
+      }
+
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'frontend_flutter.zip'; // Nombre del archivo de descarga
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Error al exportar el código de Flutter:', error);
+      alert(`No se pudo exportar el código de Flutter: ${error.message}`);
+    }
+  };
+
   return (
     <div className="page-builder">
       <div className="toolbar">
@@ -1178,7 +1219,10 @@ export const ChantSelect = () => {
                 <pre className="code-preview">
                   {generateSpringBootCodePreview(tables, relationships)}
                 </pre>
-                <button onClick={handleExportCode} className="btn">Exportar código</button>
+                <div className="d-flex" style={{ gap: '10px' }}>
+                  <button onClick={handleExportCode} className="btn">Exportar Backend (Spring)</button>
+                  <button onClick={handleExportFlutterCode} className="btn btn-info">Exportar Frontend (Flutter)</button>
+                </div>
               </div>
             )}
           </div>

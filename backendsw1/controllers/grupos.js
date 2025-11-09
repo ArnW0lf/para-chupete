@@ -3,21 +3,20 @@ const Grupo = require('../models/grupos');
 const Usuario = require('../models/usuario');
 const fs = require('fs-extra');
 const path = require('path');
+const { generarEstructuraFlutter } = require('../helpers/flutter-generator');
 const archiver = require('archiver');
 
+// --- Importamos módulos para ejecutar comandos de terminal ---
+const { exec: execCallback } = require('child_process');
+const util = require('util');
+const exec = util.promisify(execCallback); // Versión de 'exec' que usa promesas
 
-// Actualizar el canvas de un grupo - Versión corregida
+
+// Actualizar el canvas de un grupo
 const actualizarCanvas = async (req, res = response) => {
     try {
         const grupoId = req.params.id;
         const { contenidoCanvas, clientId = 'unknown' } = req.body;
-
-        console.log('Datos recibidos para guardar:', {
-            grupoId,
-            clientId,
-            tieneComponents: !!contenidoCanvas?.components,
-            tieneTables: !!contenidoCanvas?.tables
-        });
 
         // Buscar el grupo
         const grupo = await Grupo.findById(grupoId);
@@ -79,11 +78,7 @@ const actualizarCanvas = async (req, res = response) => {
                 source: 'server',
                 clientId: clientId
             });
-
-            console.log(`Evento diagram:updated emitido a grupo ${grupoId}`);
         }
-
-        console.log('Canvas guardado exitosamente');
 
         res.json({
             ok: true,
@@ -141,12 +136,11 @@ const sincronizarCanvas = async (req, res = response) => {
         });
     }
 };
-// Obtener un grupo específico - Versión corregida
+
+// Obtener un grupo específico
 const obtenerGrupo = async (req, res = response) => {
     try {
         const grupoId = req.params.id;
-
-        // Buscar el grupo
         const grupo = await Grupo.findById(grupoId);
 
         if (!grupo) {
@@ -155,10 +149,8 @@ const obtenerGrupo = async (req, res = response) => {
                 msg: 'Grupo no encontrado'
             });
         }
-
-        // Asegurar que la respuesta tenga la estructura moderna
+        
         if (!grupo.contenidoCanvas) {
-            // Si no hay contenido, inicializarlo
             grupo.contenidoCanvas = { tables: [], relationships: [] };
         }
 
@@ -183,7 +175,6 @@ const crearGrupo = async (req, res = response) => {
         const { nombre } = req.body;
         const uid = req.uid; // ID del usuario que viene del middleware validarJWT
 
-        // Crear grupo en la BD con el contenidoCanvas por defecto
         const grupo = new Grupo({
             nombre,
             creador: uid,
@@ -194,8 +185,6 @@ const crearGrupo = async (req, res = response) => {
         });
 
         await grupo.save();
-
-        // Obtener información del creador para la respuesta
         const usuario = await Usuario.findById(uid);
 
         res.json({
@@ -218,10 +207,9 @@ const crearGrupo = async (req, res = response) => {
 // Obtener todos los grupos
 const obtenerGrupos = async (req, res = response) => {
     try {
-        // Buscar todos los grupos activos
         const grupos = await Grupo.find({
             activo: true
-        }).sort({ updatedAt: -1 }); // Más recientes primero
+        }).sort({ updatedAt: -1 });
 
         res.json({
             ok: true,
@@ -237,6 +225,7 @@ const obtenerGrupos = async (req, res = response) => {
     }
 };
 
+// --- FUNCIÓN generarBackend (ACTUALIZADA) ---
 // Generar el backend (proyecto Spring Boot)
 const generarBackend = async (req, res = response) => {
     const grupoId = req.params.id;
@@ -252,12 +241,8 @@ const generarBackend = async (req, res = response) => {
             });
         }
 
-        // Usar 'tables' directamente
         const tables = grupo.contenidoCanvas.tables || [];
         const relationships = grupo.contenidoCanvas.relationships || [];
-
-        console.log('Tablas encontradas:', tables.length);
-        console.log('Relaciones encontradas:', relationships.length);
 
         if (tables.length === 0) {
             return res.status(400).json({
@@ -282,7 +267,6 @@ const generarBackend = async (req, res = response) => {
         const resourcesDir = path.join(outputDir, 'src', 'main', 'resources');
 
         // Crear directorios necesarios
-        console.log('Creando estructura de directorios...');
         await fs.ensureDir(mainJavaPath);
         await fs.ensureDir(entityJavaPath);
         await fs.ensureDir(repositoryJavaPath);
@@ -290,9 +274,7 @@ const generarBackend = async (req, res = response) => {
         await fs.ensureDir(controllerJavaPath);
         await fs.ensureDir(resourcesDir);
 
-        console.log('Estructura de directorios creada exitosamente');
-
-        // 3. Generar pom.xml - PRIMERO CREAR EL ARCHIVO EN EL DIRECTORIO CORRECTO
+        // 3. Generar pom.xml
         const pomContent = `<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" 
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -337,11 +319,7 @@ const generarBackend = async (req, res = response) => {
         </plugins>
     </build>
 </project>`;
-
-        const pomPath = path.join(outputDir, 'pom.xml');
-        console.log('Escribiendo pom.xml en:', pomPath);
-        await fs.writeFile(pomPath, pomContent);
-        console.log('pom.xml creado exitosamente');
+        await fs.writeFile(path.join(outputDir, 'pom.xml'), pomContent);
 
         // 4. Generar application.properties
         const appProperties = `spring.datasource.url=jdbc:h2:mem:testdb
@@ -352,28 +330,21 @@ spring.h2.console.enabled=true
 spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 spring.jpa.hibernate.ddl-auto=create-drop
 spring.jpa.show-sql=true`;
-
         await fs.writeFile(path.join(resourcesDir, 'application.properties'), appProperties);
 
         // 5. Generar clase principal de Spring Boot
         const mainClassName = `${projectName.charAt(0).toUpperCase() + projectName.slice(1)}Application`;
         const mainClassContent = `
 package ${packagePath.replace(/\//g, '.')};
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
 @SpringBootApplication
 public class ${mainClassName} {
     public static void main(String[] args) {
         SpringApplication.run(${mainClassName}.class, args);
     }
 }`;
-
-        const mainClassPath = path.join(mainJavaPath, `${mainClassName}.java`);
-        console.log('Escribiendo clase principal en:', mainClassPath);
-        await fs.writeFile(mainClassPath, mainClassContent);
-        console.log('Clase principal creada exitosamente');
+        await fs.writeFile(path.join(mainJavaPath, `${mainClassName}.java`), mainClassContent);
 
         // 6. Mapa para almacenar entidades
         const entityContents = new Map();
@@ -382,33 +353,25 @@ public class ${mainClassName} {
         // 7. Generar entidades
         console.log('Generando entidades...');
         for (const table of tables) {
-            if (!table.name) continue; // Saltar tablas sin nombre
-            // Asegurar nombre válido para la entidad
+            if (!table.name) continue; 
             const entityName = table.name || `Table${table.id.slice(-4)}`;
             let imports = new Set(['javax.persistence.*']);
             let attributes = '';
 
-            // Buscar columna PK
             const pkColumn = table.columns.find(col => col.constraints && col.constraints.includes('PK'));
-
             if (pkColumn) {
                 attributes += `    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long ${pkColumn.name || 'id'};\n\n`;
             } else {
-                // Si no hay PK, crear una por defecto
                 attributes += `    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long id;\n\n`;
             }
 
-            // Generar atributos para las demás columnas
             for (const col of table.columns) {
                 if (col.constraints && col.constraints.includes('PK')) continue;
-
                 const attrName = col.name || 'campoSinNombre';
                 const javaType = mapSqlTypeToJava(col.type);
-
                 if (javaType === 'LocalDate' || javaType === 'LocalDateTime') {
                     imports.add(`java.time.${javaType}`);
                 }
-
                 attributes += `    private ${javaType} ${attrName};\n`;
             }
 
@@ -416,26 +379,22 @@ public class ${mainClassName} {
                 imports,
                 attributes,
                 relations: '',
-                extendsClass: null, // Añadir para manejar herencia
-                tableId: table.id
+                extendsClass: null,
+                tableId: table.id,
+                manyToOneRelations: [], // Relaciones que ESTA tabla tiene (ej. Comentario -> Post)
+                oneToManyRelations: []  // Relaciones que OTRAS tablas tienen con esta (ej. Post -> Comentario)
             });
         }
 
-        // 8. Procesar relaciones
+        // 8. Procesar relaciones (ACTUALIZADO CON LÓGICA BIDIRECCIONAL)
         console.log('Procesando relaciones...');
         for (const rel of relationships) {
-            console.log('Procesando relación:', rel);
-
-            // CORRECCIÓN: Añadir compatibilidad para la estructura de datos antigua y nueva.
             const fromTableId = rel.fromTableId || rel.fromComponentId;
             const toTableId = rel.toTableId || rel.endComponentId;
             const startTable = tableMap.get(fromTableId);
             const endTable = tableMap.get(toTableId);
 
-            if (!startTable || !endTable) {
-                console.warn(`Tablas para la relación no encontradas. From: ${fromTableId}, To: ${toTableId}`);
-                continue;
-            }
+            if (!startTable || !endTable) continue;
 
             const startEntityName = startTable.name || `Table${startTable.id.slice(-4)}`;
             const endEntityName = endTable.name || `Table${endTable.id.slice(-4)}`;
@@ -443,31 +402,59 @@ public class ${mainClassName} {
             const startEntity = entityContents.get(startEntityName);
             const endEntity = entityContents.get(endEntityName);
 
-            if (!startEntity || !endEntity) {
-                console.log('Entidad de origen o destino no encontrada en el mapa');
-                continue;
-            }
+            if (!startEntity || !endEntity) continue;
 
             const endEntityNameLower = endEntityName.charAt(0).toLowerCase() + endEntityName.slice(1);
+            const startEntityNameLower = startEntityName.charAt(0).toLowerCase() + startEntityName.slice(1);
 
             switch (rel.type) {
                 case 'one-to-one':
                     startEntity.relations += `\n    @OneToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
                     break;
+                
+                // --- LÓGICA CORREGIDA ---
                 case 'one-to-many':
+                    // Lado "Uno" (Padre, ej. Post)
                     startEntity.imports.add('java.util.List');
-                    startEntity.relations += `\n    @OneToMany\n    @JoinColumn(name = "${startEntityName.toLowerCase()}_id")\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    startEntity.imports.add('com.fasterxml.jackson.annotation.JsonIgnoreProperties');
+                    startEntity.relations += `\n    @OneToMany(mappedBy = "${startEntityNameLower}")\n    @JsonIgnoreProperties("${startEntityNameLower}")\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
+                    
+                    // Lado "Muchos" (Hijo, ej. Comentario)
+                    endEntity.imports.add('com.fasterxml.jackson.annotation.JsonIgnoreProperties');
+                    endEntity.relations += `\n    @ManyToOne\n    @JoinColumn(name = "${startEntityNameLower}_id")\n    @JsonIgnoreProperties("${endEntityNameLower}List")\n    private ${startEntityName} ${startEntityNameLower};`;
+                    
+                    // Informar a los generadores de repo/controller
+                    endEntity.manyToOneRelations.push({
+                        parentModel: startEntityName, 
+                        parentName: startEntityNameLower 
+                    });
                     break;
+
+                // --- LÓGICA CORREGIDA ---
                 case 'many-to-one':
-                    startEntity.relations += `\n    @ManyToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
+                    // Lado "Muchos" (Hijo, ej. Comentario)
+                    startEntity.imports.add('com.fasterxml.jackson.annotation.JsonIgnoreProperties');
+                    startEntity.relations += `\n    @ManyToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    @JsonIgnoreProperties("${startEntityNameLower}List")\n    private ${endEntityName} ${endEntityNameLower};`;
+                    
+                    // Lado "Uno" (Padre, ej. Post)
+                    endEntity.imports.add('java.util.List');
+                    endEntity.imports.add('com.fasterxml.jackson.annotation.JsonIgnoreProperties');
+                    endEntity.relations += `\n    @OneToMany(mappedBy = "${endEntityNameLower}")\n    @JsonIgnoreProperties("${endEntityNameLower}")\n    private List<${startEntityName}> ${startEntityNameLower}List;`;
+
+                    // Informar a los generadores de repo/controller
+                    startEntity.manyToOneRelations.push({
+                        parentModel: endEntityName,
+                        parentName: endEntityNameLower
+                    });
                     break;
+                // --- FIN LÓGICA CORREGIDA ---
+
                 case 'many-to-many':
                     startEntity.imports.add('java.util.List');
                     startEntity.relations += `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
-                // Nuevos tipos para Diagrama de Clases
                 case 'inheritance':
-                    startEntity.extendsClass = endEntityName; // Marcar para herencia
+                    startEntity.extendsClass = endEntityName;
                     break;
                 case 'composition':
                     startEntity.imports.add('java.util.List');
@@ -480,7 +467,6 @@ public class ${mainClassName} {
                     startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
                     break;
                 default:
-                    console.log('Tipo de relación no reconocido:', rel.type);
                     continue;
             }
         }
@@ -497,64 +483,71 @@ public class ${mainClassName} {
                 const fieldType = match[1];
                 const fieldName = match[2];
                 const capitalizedFieldName = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
-
-                // Getter
-                gettersAndSetters += `
-    public ${fieldType} get${capitalizedFieldName}() {
-        return this.${fieldName};
-    }
-`;
-                // Setter
-                gettersAndSetters += `
-    public void set${capitalizedFieldName}(${fieldType} ${fieldName}) {
-        this.${fieldName} = ${fieldName};
-    }
-`;
+                gettersAndSetters += `\n    public ${fieldType} get${capitalizedFieldName}() { return this.${fieldName}; }`;
+                gettersAndSetters += `\n    public void set${capitalizedFieldName}(${fieldType} ${fieldName}) { this.${fieldName} = ${fieldName}; }\n`;
             }
 
-            const importStatements = Array.from(content.imports)
-                .map(imp => imp.endsWith('*') ? `import ${imp};` : `import ${imp};`)
-                .join('\n');
-
+            const importStatements = Array.from(content.imports).map(imp => `import ${imp};`).join('\n');
             const extendsClause = content.extendsClass ? ` extends ${content.extendsClass}` : '';
             const finalContent = `package ${packagePath.replace(/\//g, '.')}.entities;
-
 ${importStatements.trim()}
-
 @Entity
 public class ${entityName}${extendsClause} {
 ${(content.attributes + content.relations).trim()}
-    // Constructores
     public ${entityName}() {}
 ${gettersAndSetters}
 }`;
-
-            const entityPath = path.join(entityJavaPath, `${entityName}.java`);
-            await fs.writeFile(entityPath, finalContent);
-            console.log(`Entidad ${entityName} creada en: ${entityPath}`);
+            await fs.writeFile(path.join(entityJavaPath, `${entityName}.java`), finalContent);
         }
 
-        // 10. Generar repositories
+        // 10. Generar repositories (ACTUALIZADO)
         console.log('Generando repositories...');
-        for (const [entityName] of entityContents.entries()) {
+        for (const [entityName, content] of entityContents.entries()) {
+            
+            let findByMethods = '';
+            if (content.manyToOneRelations.length > 0) {
+                for (const rel of content.manyToOneRelations) {
+                    const parentModel = rel.parentModel;
+                    if (!content.imports.has('java.util.List')) {
+                        content.imports.add('java.util.List');
+                    }
+                    findByMethods += `
+    // Buscar por ${parentModel}
+    List<${entityName}> findBy${parentModel}Id(Long ${rel.parentName}Id);
+`;
+                }
+            }
+
             const repositoryContent = `package ${packagePath.replace(/\//g, '.')}.repositories;
 
 import ${packagePath.replace(/\//g, '.')}.entities.${entityName};
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 @Repository
 public interface ${entityName}Repository extends JpaRepository<${entityName}, Long> {
+${findByMethods}
 }`;
-
-            const repoPath = path.join(repositoryJavaPath, `${entityName}Repository.java`);
-            await fs.writeFile(repoPath, repositoryContent);
-            console.log(`Repository ${entityName}Repository creado en: ${repoPath}`);
+            await fs.writeFile(path.join(repositoryJavaPath, `${entityName}Repository.java`), repositoryContent);
         }
 
-        // 11. Generar servicios básicos
+        // 11. Generar servicios básicos (ACTUALIZADO)
         console.log('Generando servicios...');
-        for (const [entityName] of entityContents.entries()) {
+        for (const [entityName, content] of entityContents.entries()) {
+            
+            let serviceFindByMethods = '';
+            if (content.manyToOneRelations.length > 0) {
+                for (const rel of content.manyToOneRelations) {
+                    const parentModel = rel.parentModel;
+                    serviceFindByMethods += `
+    public List<${entityName}> findBy${parentModel}Id(Long ${rel.parentName}Id) {
+        return repository.findBy${parentModel}Id(${rel.parentName}Id);
+    }
+`;
+                }
+            }
+
             const serviceContent = `package ${packagePath.replace(/\//g, '.')}.services;
 
 import ${packagePath.replace(/\//g, '.')}.entities.${entityName};
@@ -570,37 +563,35 @@ public class ${entityName}Service {
     @Autowired
     private ${entityName}Repository repository;
     
-    public List<${entityName}> findAll() {
-        return repository.findAll();
-    }
-    
-    public Optional<${entityName}> findById(Long id) {
-        return repository.findById(id);
-    }
-    
-    public ${entityName} save(${entityName} entity) {
-        return repository.save(entity);
-    }
-    
-    public void deleteById(Long id) {
-        repository.deleteById(id);
-    }
-}`;
+    public List<${entityName}> findAll() { return repository.findAll(); }
+    public Optional<${entityName}> findById(Long id) { return repository.findById(id); }
+    public ${entityName} save(${entityName} entity) { return repository.save(entity); }
+    public void deleteById(Long id) { repository.deleteById(id); }
 
-            const servicePath = path.join(serviceJavaPath, `${entityName}Service.java`);
-            await fs.writeFile(servicePath, serviceContent);
-            console.log(`Service ${entityName}Service creado en: ${servicePath}`);
+${serviceFindByMethods}
+}`;
+            await fs.writeFile(path.join(serviceJavaPath, `${entityName}Service.java`), serviceContent);
         }
 
-        // 12. Generar controladores básicos (VERSIÓN COMPLETAMENTE CORREGIDA)
+        // 12. Generar controladores básicos (ACTUALIZADO)
         console.log('Generando controladores...');
-        for (const [entityName] of entityContents.entries()) {
+        for (const [entityName, content] of entityContents.entries()) {
             const entityNameLower = entityName.toLowerCase();
-
-            // DEFINIR TODAS LAS VARIABLES NECESARIAS
             const controllerName = `${entityName}Controller`;
             const serviceName = `${entityName}Service`;
-            const repositoryName = `${entityName}Repository`;
+
+            let controllerFindByEndpoints = '';
+            
+            if (content.manyToOneRelations.length > 0) {
+                 for (const rel of content.manyToOneRelations) {
+                    controllerFindByEndpoints += `
+    @GetMapping("/by-${rel.parentName}/{${rel.parentName}Id}")
+    public List<${entityName}> getBy${rel.parentModel}Id(@PathVariable Long ${rel.parentName}Id) {
+        return service.findBy${rel.parentModel}Id(${rel.parentName}Id);
+    }
+`;
+                 }
+            }
 
             const controllerContent = `package ${packagePath.replace(/\//g, '.')}.controllers;
 
@@ -640,12 +631,16 @@ public class ${controllerName} {
     public ResponseEntity<${entityName}> update(@PathVariable Long id, @RequestBody ${entityName} entityDetails) {
         Optional<${entityName}> existingEntity = service.findById(id);
         if (existingEntity.isPresent()) {
-            ${entityName} entity = existingEntity.get();
-            // Actualizar campos aquí
-            return ResponseEntity.ok(service.save(entity));
+            // Actualización simple: reemplaza el objeto encontrado con los detalles nuevos (excepto el id)
+            // Asumimos que la PK se llama 'id'
+            // entityDetails.setId(id); 
+            // Esto es peligroso si la PK no se llama 'id'.
+            // Una mejor práctica (aunque simple) es solo guardar el objeto que llega.
+            return ResponseEntity.ok(service.save(entityDetails));
         }
         return ResponseEntity.notFound().build();
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (service.findById(id).isPresent()) {
@@ -654,15 +649,13 @@ public class ${controllerName} {
         }
         return ResponseEntity.notFound().build();
     }
-}`;
 
-            const controllerPath = path.join(controllerJavaPath, `${controllerName}.java`);
-            await fs.writeFile(controllerPath, controllerContent);
-            console.log(`Controller ${controllerName} creado en: ${controllerPath}`);
+${controllerFindByEndpoints}
+}`;
+            await fs.writeFile(path.join(controllerJavaPath, `${controllerName}.java`), controllerContent);
         }
 
         // 13. Comprimir y enviar
-        // Envolvemos la lógica de compresión en una Promise para un mejor manejo de errores
         await new Promise((resolve, reject) => {
             const zipPath = path.join(__dirname, '..', 'temp', `${projectName}.zip`);
             const output = fs.createWriteStream(zipPath);
@@ -674,18 +667,13 @@ public class ${controllerName} {
                     if (err) {
                         console.error("Error al enviar el archivo:", err);
                     }
-                    // Limpiar archivos temporales después de la descarga
                     fs.remove(outputDir).catch(console.error);
                     fs.remove(zipPath).catch(console.error);
                     resolve();
                 });
             });
 
-            archive.on('error', (err) => {
-                console.error('Error al crear archivo ZIP:', err);
-                reject(err);
-            });
-
+            archive.on('error', (err) => reject(err));
             archive.pipe(output);
             archive.directory(outputDir, false);
             archive.finalize();
@@ -693,12 +681,96 @@ public class ${controllerName} {
 
     } catch (error) {
         console.error('Error en generarBackend:', error);
-        // Limpiar en caso de error
         await fs.remove(outputDir).catch(console.error);
-
         res.status(500).json({
             ok: false,
             msg: `Error al generar el backend: ${error.message}`
+        });
+    }
+};
+
+// --- FUNCIÓN generarFrontendFlutter (ACTUALIZADA) ---
+const generarFrontendFlutter = async (req, res = response) => {
+    const grupoId = req.params.id;
+    let outputDir; // Definido aquí para que esté en el scope del try/catch/finally
+
+    try {
+        // 1. Buscar el grupo y su contenido
+        const grupo = await Grupo.findById(grupoId);
+        if (!grupo || !grupo.contenidoCanvas) {
+            return res.status(404).json({ ok: false, msg: 'Grupo no encontrado o sin contenido.' });
+        }
+
+        const tables = grupo.contenidoCanvas.tables || [];
+        const relationships = grupo.contenidoCanvas.relationships || [];
+        
+        if (tables.length === 0) {
+            return res.status(400).json({ ok: false, msg: 'No hay tablas para generar el frontend.' });
+        }
+
+        const projectName = (grupo.nombre || 'flutter_app').replace(/\s+/g, '').toLowerCase();
+        
+        // El directorio de salida ahora incluye el nombre del proyecto
+        outputDir = path.join(__dirname, '..', 'temp', `flutter_gen_${projectName}_${Date.now()}`);
+
+        // 2. Crear el directorio de salida
+        await fs.ensureDir(outputDir);
+        console.log(`Directorio temporal creado en: ${outputDir}`);
+
+        // 3. Ejecutar 'flutter create .' DENTRO de ese directorio
+        const flutterCommand = 'flutter create .';
+        console.log(`Ejecutando '${flutterCommand}' en ${outputDir}`);
+        
+        // Usamos { cwd } para definir el directorio de trabajo del comando
+        const { stdout, stderr } = await exec(flutterCommand, { cwd: outputDir });
+        
+        console.log('Flutter create stdout:', stdout);
+        if (stderr && stderr.length > 0) {
+            console.warn('Flutter create stderr:', stderr);
+        }
+        console.log('Proyecto Flutter base creado exitosamente.');
+        
+        // 4. Llamar a la función de generación de código (sobrescribirá lib/ y pubspec.yaml)
+        await generarEstructuraFlutter(outputDir, projectName, tables, relationships);
+
+        // 5. Comprimir y enviar el archivo
+        await new Promise((resolve, reject) => {
+            const zipPath = path.join(__dirname, '..', 'temp', `${projectName}_flutter.zip`);
+            const output = fs.createWriteStream(zipPath);
+            const archive = archiver('zip', { zlib: { level: 9 } });
+
+            output.on('close', () => {
+                console.log('Archivo ZIP de Flutter creado exitosamente');
+                res.download(zipPath, `${projectName}_flutter.zip`, (err) => {
+                    if (err) {
+                        console.error("Error al enviar el archivo de Flutter:", err);
+                    }
+                    // Limpiar archivos temporales
+                    fs.remove(outputDir).catch(console.error);
+                    fs.remove(zipPath).catch(console.error);
+                    resolve();
+                });
+            });
+
+            archive.on('error', (err) => {
+                console.error('Error al crear archivo ZIP de Flutter:', err);
+                reject(err);
+            });
+
+            archive.pipe(output);
+            archive.directory(outputDir, false); 
+            archive.finalize();
+        });
+
+    } catch (error) {
+        console.error('Error en generarFrontendFlutter:', error);
+        // Limpiar en caso de error
+        if (outputDir) {
+            await fs.remove(outputDir).catch(console.error);
+        }
+        res.status(500).json({
+            ok: false,
+            msg: `Error al generar el frontend de Flutter: ${error.message}`
         });
     }
 };
@@ -713,8 +785,8 @@ function mapSqlTypeToJava(sqlType) {
     if (type.includes('VARCHAR') || type.includes('TEXT') || type.includes('CHAR')) return 'String';
     if (type.includes('DECIMAL') || type.includes('FLOAT') || type.includes('DOUBLE')) return 'Double';
     if (type.includes('BOOLEAN') || type.includes('BOOL')) return 'Boolean';
-    if (type.includes('DATE')) return 'LocalDate';
-    if (type.includes('TIMESTAMP') || type.includes('DATETIME')) return 'LocalDateTime';
+    if (type.includes('DATE')) return 'java.time.LocalDate';
+    if (type.includes('TIMESTAMP') || type.includes('DATETIME')) return 'java.time.LocalDateTime';
 
     return 'String';
 }
@@ -725,6 +797,6 @@ module.exports = {
     obtenerGrupo,
     actualizarCanvas,
     generarBackend,
-    sincronizarCanvas // Exportar la nueva función
+    generarFrontendFlutter,
+    sincronizarCanvas
 }
-// ...existing code...
