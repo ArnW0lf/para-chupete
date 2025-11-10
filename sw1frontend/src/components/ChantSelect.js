@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { v4 as uuidv4 } from "uuid";
-import './dashboard.css';
+import "./dashboard.css";
 import { SocketContext } from "../context/SocketContext";
 import { ChatConext } from "../context/chat/ChatContext";
 import { fetchConnToken } from "../helpers/fetch";
@@ -18,11 +18,17 @@ const TableComponent = ({
   onDeleteColumn,
   onSetPrimaryKey,
   editingTarget,
-  setEditingId
+  setEditingId,
 }) => {
   const nameInputRef = useRef(null);
 
   const handleMouseDown = (e) => {
+    // Permitir el comportamiento por defecto para elementos interactivos
+    const interactiveTags = ["input", "select", "textarea", "button", "option"];
+    if (interactiveTags.includes(e.target.tagName.toLowerCase())) {
+      // Permitir comportamiento por defecto para controles de formulario dentro de la tabla
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     onMouseDown(e, tableData.id);
@@ -36,25 +42,38 @@ const TableComponent = ({
   };
 
   const isEditingName = editingTarget === `${tableData.id}-name`;
-  const isEditingColumn = (columnId) => editingTarget === `${tableData.id}-${columnId}`;
+  const isEditingColumn = (columnId) =>
+    editingTarget === `${tableData.id}-${columnId}`;
 
   // Tipos de datos comunes para base de datos
   const commonDataTypes = [
-    'INT', 'VARCHAR(255)', 'TEXT', 'DATE', 'DATETIME',
-    'DECIMAL(10,2)', 'BOOLEAN', 'FLOAT', 'TIMESTAMP'
+    "INT",
+    "VARCHAR(255)",
+    "TEXT",
+    "DATE",
+    "DATETIME",
+    "DECIMAL(10,2)",
+    "BOOLEAN",
+    "FLOAT",
+    "TIMESTAMP",
   ];
 
   return (
     <div
-      className={`uml-class-box ${isSelected ? 'active' : ''} ${isRelationSource ? 'relation-source' : ''}`}
+      className={`uml-class-box ${isSelected ? "active" : ""} ${
+        isRelationSource ? "relation-source" : ""
+      }`}
       style={{
-        position: 'absolute',
+        position: "absolute",
         top: `${tableData.top}px`,
         left: `${tableData.left}px`,
       }}
       onMouseDown={handleMouseDown}
     >
-      <div className="uml-class-name" onDoubleClick={() => onDoubleClick('name')}>
+      <div
+        className="uml-class-name"
+        onDoubleClick={() => onDoubleClick("name")}
+      >
         {isEditingName ? (
           <form onSubmit={handleNameSubmit} className="name-edit-form">
             <input
@@ -64,10 +83,10 @@ const TableComponent = ({
               defaultValue={tableData.name}
               onBlur={handleNameSubmit}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   e.target.blur();
-                } else if (e.key === 'Escape') {
+                } else if (e.key === "Escape") {
                   setEditingId(null);
                   e.target.blur();
                 }
@@ -83,7 +102,7 @@ const TableComponent = ({
       </div>
 
       <div className="uml-table-columns">
-        {tableData.columns.map(col => {
+        {tableData.columns.map((col) => {
           const editingThisColumn = isEditingColumn(col.id);
 
           return (
@@ -94,12 +113,19 @@ const TableComponent = ({
                     type="text"
                     defaultValue={col.name}
                     className="uml-column-input name-input"
-                    onBlur={(e) => onColumnChange(tableData.id, col.id, 'name', e.target.value)}
+                    onBlur={(e) =>
+                      onColumnChange(
+                        tableData.id,
+                        col.id,
+                        "name",
+                        e.target.value
+                      )
+                    }
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         e.target.blur();
-                      } else if (e.key === 'Escape') {
+                      } else if (e.key === "Escape") {
                         setEditingId(null);
                         e.target.blur();
                       }
@@ -111,11 +137,20 @@ const TableComponent = ({
                   <select
                     value={col.type}
                     className="uml-column-input type-select"
-                    onChange={(e) => onColumnChange(tableData.id, col.id, 'type', e.target.value)}
+                    onChange={(e) =>
+                      onColumnChange(
+                        tableData.id,
+                        col.id,
+                        "type",
+                        e.target.value
+                      )
+                    }
                     onBlur={() => setEditingId(null)}
                   >
-                    {commonDataTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
+                    {commonDataTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
                     ))}
                   </select>
 
@@ -127,11 +162,15 @@ const TableComponent = ({
                         e.stopPropagation();
                         onSetPrimaryKey(tableData.id, col.id);
                       }}
-                      title={col.constraints.includes('PK') ? 'Clave primaria' : 'Establecer como clave primaria'}
+                      title={
+                        col.constraints.includes("PK")
+                          ? "Clave primaria"
+                          : "Establecer como clave primaria"
+                      }
                     >
                       PK
                     </button>
-                    {!col.constraints.includes('PK') && (
+                    {!col.constraints.includes("PK") && (
                       <button
                         className="delete-column-btn"
                         onClick={(e) => {
@@ -150,11 +189,15 @@ const TableComponent = ({
                   className="column-display"
                   onDoubleClick={() => onDoubleClick(col.id)}
                 >
-                  <span className="column-name">{col.name || 'sin nombre'}</span>
-                  <span className="column-type">{col.type || 'sin tipo'}</span>
+                  <span className="column-name">
+                    {col.name || "sin nombre"}
+                  </span>
+                  <span className="column-type">{col.type || "sin tipo"}</span>
                   <div className="column-actions">
-                    {col.constraints.includes('PK') && (
-                      <span className="column-pk" title="Clave primaria">PK</span>
+                    {col.constraints.includes("PK") && (
+                      <span className="column-pk" title="Clave primaria">
+                        PK
+                      </span>
                     )}
                   </div>
                 </div>
@@ -187,7 +230,8 @@ const getTableDimensions = (tableData) => {
   const TABLE_WIDTH = 200;
   const TABLE_HEADER_HEIGHT = 30;
   const TABLE_ROW_HEIGHT = 25;
-  const TABLE_HEIGHT = TABLE_HEADER_HEIGHT + (tableData.columns.length * TABLE_ROW_HEIGHT);
+  const TABLE_HEIGHT =
+    TABLE_HEADER_HEIGHT + tableData.columns.length * TABLE_ROW_HEIGHT;
 
   return { width: TABLE_WIDTH, height: TABLE_HEIGHT };
 };
@@ -197,7 +241,7 @@ const getTableCenter = (tableData) => {
   const { width, height } = getTableDimensions(tableData);
   return {
     x: tableData.left + width / 2,
-    y: tableData.top + height / 2
+    y: tableData.top + height / 2,
   };
 };
 
@@ -222,11 +266,11 @@ const getIntersectionPoint = (tableData, fromX, fromY) => {
   if (Math.abs(dx) * height > Math.abs(dy) * width) {
     // La línea es más horizontal
     intersectX = dx > 0 ? right : left;
-    intersectY = centerY + dy * (width / 2) / Math.abs(dx);
+    intersectY = centerY + (dy * (width / 2)) / Math.abs(dx);
   } else {
     // La línea es más vertical
     intersectY = dy > 0 ? bottom : top;
-    intersectX = centerX + dx * (height / 2) / Math.abs(dy);
+    intersectX = centerX + (dx * (height / 2)) / Math.abs(dy);
   }
 
   return { x: intersectX, y: intersectY };
@@ -236,23 +280,25 @@ const getIntersectionPoint = (tableData, fromX, fromY) => {
 const getBorderDirection = (tableData, intersectX, intersectY) => {
   const { width, height } = getTableDimensions(tableData);
   const tolerance = 1; // Tolerancia para detectar el borde
-  if (Math.abs(intersectX - tableData.left) < tolerance) return 'left';
-  if (Math.abs(intersectX - (tableData.left + width)) < tolerance) return 'right';
-  if (Math.abs(intersectY - tableData.top) < tolerance) return 'up';
-  if (Math.abs(intersectY - (tableData.top + height)) < tolerance) return 'down';
-  return 'right'; // Fallback
+  if (Math.abs(intersectX - tableData.left) < tolerance) return "left";
+  if (Math.abs(intersectX - (tableData.left + width)) < tolerance)
+    return "right";
+  if (Math.abs(intersectY - tableData.top) < tolerance) return "up";
+  if (Math.abs(intersectY - (tableData.top + height)) < tolerance)
+    return "down";
+  return "right"; // Fallback
 };
 
 // Nueva función para empujar el símbolo hacia afuera
 const pushSymbolOutside = (intersectionPoint, direction, offset) => {
   switch (direction) {
-    case 'right':
+    case "right":
       return { x: intersectionPoint.x + offset, y: intersectionPoint.y };
-    case 'left':
+    case "left":
       return { x: intersectionPoint.x - offset, y: intersectionPoint.y };
-    case 'down':
+    case "down":
       return { x: intersectionPoint.x, y: intersectionPoint.y + offset };
-    case 'up':
+    case "up":
       return { x: intersectionPoint.x, y: intersectionPoint.y - offset };
     default:
       return intersectionPoint;
@@ -262,20 +308,23 @@ const pushSymbolOutside = (intersectionPoint, direction, offset) => {
 // Componente para renderizar relaciones entre tablas CON LÍNEAS ORTOGONALES
 const RelationshipLayer = ({ relationships, tables }) => {
   return (
-    <svg className="relation-svg" style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      pointerEvents: 'none'
-    }}>
+    <svg
+      className="relation-svg"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+      }}
+    >
       {relationships.map((rel) => {
         // CORRECCIÓN: Añadir compatibilidad para la estructura de datos antigua y nueva.
         const fromTableId = rel.fromTableId || rel.fromComponentId;
         const toTableId = rel.toTableId || rel.endComponentId;
-        const fromTable = tables.find(t => t.id === fromTableId);
-        const toTable = tables.find(t => t.id === toTableId);
+        const fromTable = tables.find((t) => t.id === fromTableId);
+        const toTable = tables.find((t) => t.id === toTableId);
 
         if (!fromTable || !toTable) return null;
 
@@ -284,16 +333,40 @@ const RelationshipLayer = ({ relationships, tables }) => {
         const endCenter = getTableCenter(toTable);
 
         // Calcular puntos de intersección
-        const startIntersection = getIntersectionPoint(fromTable, endCenter.x, endCenter.y);
-        const endIntersection = getIntersectionPoint(toTable, startCenter.x, startCenter.y);
+        const startIntersection = getIntersectionPoint(
+          fromTable,
+          endCenter.x,
+          endCenter.y
+        );
+        const endIntersection = getIntersectionPoint(
+          toTable,
+          startCenter.x,
+          startCenter.y
+        );
 
         // Determinar direcciones de los bordes
-        const startDirection = getBorderDirection(fromTable, startIntersection.x, startIntersection.y);
-        const endDirection = getBorderDirection(toTable, endIntersection.x, endIntersection.y);
+        const startDirection = getBorderDirection(
+          fromTable,
+          startIntersection.x,
+          startIntersection.y
+        );
+        const endDirection = getBorderDirection(
+          toTable,
+          endIntersection.x,
+          endIntersection.y
+        );
 
         // Empujar símbolos hacia afuera para que sean visibles
-        const startSymbolPos = pushSymbolOutside(startIntersection, startDirection, 10);
-        const endSymbolPos = pushSymbolOutside(endIntersection, endDirection, 10);
+        const startSymbolPos = pushSymbolOutside(
+          startIntersection,
+          startDirection,
+          10
+        );
+        const endSymbolPos = pushSymbolOutside(
+          endIntersection,
+          endDirection,
+          10
+        );
 
         // La línea se dibuja directamente hasta el borde de la tabla
         const finalStartPoint = startIntersection;
@@ -305,7 +378,7 @@ const RelationshipLayer = ({ relationships, tables }) => {
           finalStartPoint,
           { x: finalMidX, y: finalStartPoint.y },
           { x: finalMidX, y: finalEndPoint.y },
-          finalEndPoint
+          finalEndPoint,
         ];
 
         // Función mejorada para dibujar símbolos de cardinalidad
@@ -315,36 +388,120 @@ const RelationshipLayer = ({ relationships, tables }) => {
           if (isMany) {
             // Símbolo de "Muchos" (Pata de gallo)
             switch (direction) {
-              case 'right':
+              case "right":
                 return (
                   <g transform={`translate(${x},${y})`}>
-                    <line x1="0" y1="-6" x2="0" y2="6" stroke="black" strokeWidth="2" />
-                    <line x1="0" y1="-6" x2="6" y2="0" stroke="black" strokeWidth="2" />
-                    <line x1="0" y1="6" x2="6" y2="0" stroke="black" strokeWidth="2" />
+                    <line
+                      x1="0"
+                      y1="-6"
+                      x2="0"
+                      y2="6"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="0"
+                      y1="-6"
+                      x2="6"
+                      y2="0"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="0"
+                      y1="6"
+                      x2="6"
+                      y2="0"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
                   </g>
                 );
-              case 'left':
+              case "left":
                 return (
                   <g transform={`translate(${x},${y})`}>
-                    <line x1="0" y1="-6" x2="0" y2="6" stroke="black" strokeWidth="2" />
-                    <line x1="0" y1="-6" x2="-6" y2="0" stroke="black" strokeWidth="2" />
-                    <line x1="0" y1="6" x2="-6" y2="0" stroke="black" strokeWidth="2" />
+                    <line
+                      x1="0"
+                      y1="-6"
+                      x2="0"
+                      y2="6"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="0"
+                      y1="-6"
+                      x2="-6"
+                      y2="0"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="0"
+                      y1="6"
+                      x2="-6"
+                      y2="0"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
                   </g>
                 );
-              case 'down':
+              case "down":
                 return (
                   <g transform={`translate(${x},${y})`}>
-                    <line x1="-6" y1="0" x2="6" y2="0" stroke="black" strokeWidth="2" />
-                    <line x1="-6" y1="0" x2="0" y2="6" stroke="black" strokeWidth="2" />
-                    <line x1="6" y1="0" x2="0" y2="6" stroke="black" strokeWidth="2" />
+                    <line
+                      x1="-6"
+                      y1="0"
+                      x2="6"
+                      y2="0"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="-6"
+                      y1="0"
+                      x2="0"
+                      y2="6"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="6"
+                      y1="0"
+                      x2="0"
+                      y2="6"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
                   </g>
                 );
-              case 'up':
+              case "up":
                 return (
                   <g transform={`translate(${x},${y})`}>
-                    <line x1="-6" y1="0" x2="6" y2="0" stroke="black" strokeWidth="2" />
-                    <line x1="-6" y1="0" x2="0" y2="-6" stroke="black" strokeWidth="2" />
-                    <line x1="6" y1="0" x2="0" y2="-6" stroke="black" strokeWidth="2" />
+                    <line
+                      x1="-6"
+                      y1="0"
+                      x2="6"
+                      y2="0"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="-6"
+                      y1="0"
+                      x2="0"
+                      y2="-6"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1="6"
+                      y1="0"
+                      x2="0"
+                      y2="-6"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
                   </g>
                 );
               default:
@@ -353,12 +510,30 @@ const RelationshipLayer = ({ relationships, tables }) => {
           } else {
             // Símbolo de "Uno" (Línea simple)
             switch (direction) {
-              case 'right':
-              case 'left':
-                return <line x1={x} y1={y - 6} x2={x} y2={y + 6} stroke="black" strokeWidth="2" />;
-              case 'up':
-              case 'down':
-                return <line x1={x - 6} y1={y} x2={x + 6} y2={y} stroke="black" strokeWidth="2" />;
+              case "right":
+              case "left":
+                return (
+                  <line
+                    x1={x}
+                    y1={y - 6}
+                    x2={x}
+                    y2={y + 6}
+                    stroke="black"
+                    strokeWidth="2"
+                  />
+                );
+              case "up":
+              case "down":
+                return (
+                  <line
+                    x1={x - 6}
+                    y1={y}
+                    x2={x + 6}
+                    y2={y}
+                    stroke="black"
+                    strokeWidth="2"
+                  />
+                );
               default:
                 return null;
             }
@@ -371,36 +546,160 @@ const RelationshipLayer = ({ relationships, tables }) => {
           const size = 8; // Tamaño del símbolo
 
           switch (type) {
-            case 'inheritance': // Triángulo de herencia
+            case "inheritance": // Triángulo de herencia
               switch (direction) {
-                case 'right': return <polygon points={`${x},${y} ${x + size * 1.5},${y - size} ${x + size * 1.5},${y + size}`} fill="white" stroke="black" strokeWidth="2" />;
-                case 'left': return <polygon points={`${x},${y} ${x - size * 1.5},${y - size} ${x - size * 1.5},${y + size}`} fill="white" stroke="black" strokeWidth="2" />;
-                case 'down': return <polygon points={`${x},${y} ${x - size},${y + size * 1.5} ${x + size},${y + size * 1.5}`} fill="white" stroke="black" strokeWidth="2" />;
-                case 'up': return <polygon points={`${x},${y} ${x - size},${y - size * 1.5} ${x + size},${y - size * 1.5}`} fill="white" stroke="black" strokeWidth="2" />;
-                default: return null;
+                case "right":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x + size * 1.5},${y - size} ${
+                        x + size * 1.5
+                      },${y + size}`}
+                      fill="white"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "left":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x - size * 1.5},${y - size} ${
+                        x - size * 1.5
+                      },${y + size}`}
+                      fill="white"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "down":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x - size},${y + size * 1.5} ${
+                        x + size
+                      },${y + size * 1.5}`}
+                      fill="white"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "up":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x - size},${y - size * 1.5} ${
+                        x + size
+                      },${y - size * 1.5}`}
+                      fill="white"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                default:
+                  return null;
               }
 
-            case 'composition': // Rombo relleno de composición
-            case 'aggregation': // Rombo vacío de agregación
-              const fill = type === 'composition' ? 'black' : 'white';
+            case "composition": // Rombo relleno de composición
+            case "aggregation": // Rombo vacío de agregación
+              const fill = type === "composition" ? "black" : "white";
               switch (direction) {
-                case 'right': return <polygon points={`${x},${y} ${x + size},${y - size / 2} ${x + size * 2},${y} ${x + size},${y + size / 2}`} fill={fill} stroke="black" strokeWidth="2" />;
-                case 'left': return <polygon points={`${x},${y} ${x - size},${y - size / 2} ${x - size * 2},${y} ${x - size},${y + size / 2}`} fill={fill} stroke="black" strokeWidth="2" />;
-                case 'down': return <polygon points={`${x},${y} ${x - size / 2},${y + size} ${x},${y + size * 2} ${x + size / 2},${y + size}`} fill={fill} stroke="black" strokeWidth="2" />;
-                case 'up': return <polygon points={`${x},${y} ${x - size / 2},${y - size} ${x},${y - size * 2} ${x + size / 2},${y - size}`} fill={fill} stroke="black" strokeWidth="2" />;
-                default: return null;
+                case "right":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x + size},${y - size / 2} ${
+                        x + size * 2
+                      },${y} ${x + size},${y + size / 2}`}
+                      fill={fill}
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "left":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x - size},${y - size / 2} ${
+                        x - size * 2
+                      },${y} ${x - size},${y + size / 2}`}
+                      fill={fill}
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "down":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x - size / 2},${y + size} ${x},${
+                        y + size * 2
+                      } ${x + size / 2},${y + size}`}
+                      fill={fill}
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "up":
+                  return (
+                    <polygon
+                      points={`${x},${y} ${x - size / 2},${y - size} ${x},${
+                        y - size * 2
+                      } ${x + size / 2},${y - size}`}
+                      fill={fill}
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                default:
+                  return null;
               }
 
-            case 'association': // Flecha abierta de asociación
+            case "association": // Flecha abierta de asociación
               switch (direction) {
-                case 'right': return <polyline points={`${x + size},${y - size / 2} ${x},${y} ${x + size},${y + size / 2}`} fill="none" stroke="black" strokeWidth="2" />;
-                case 'left': return <polyline points={`${x - size},${y - size / 2} ${x},${y} ${x - size},${y + size / 2}`} fill="none" stroke="black" strokeWidth="2" />;
-                case 'down': return <polyline points={`${x - size / 2},${y + size} ${x},${y} ${x + size / 2},${y + size}`} fill="none" stroke="black" strokeWidth="2" />;
-                case 'up': return <polyline points={`${x - size / 2},${y - size} ${x},${y} ${x + size / 2},${y - size}`} fill="none" stroke="black" strokeWidth="2" />;
-                default: return null;
+                case "right":
+                  return (
+                    <polyline
+                      points={`${x + size},${y - size / 2} ${x},${y} ${
+                        x + size
+                      },${y + size / 2}`}
+                      fill="none"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "left":
+                  return (
+                    <polyline
+                      points={`${x - size},${y - size / 2} ${x},${y} ${
+                        x - size
+                      },${y + size / 2}`}
+                      fill="none"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "down":
+                  return (
+                    <polyline
+                      points={`${x - size / 2},${y + size} ${x},${y} ${
+                        x + size / 2
+                      },${y + size}`}
+                      fill="none"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                case "up":
+                  return (
+                    <polyline
+                      points={`${x - size / 2},${y - size} ${x},${y} ${
+                        x + size / 2
+                      },${y - size}`}
+                      fill="none"
+                      stroke="black"
+                      strokeWidth="2"
+                    />
+                  );
+                default:
+                  return null;
               }
 
-            default: return null;
+            default:
+              return null;
           }
         };
 
@@ -408,36 +707,61 @@ const RelationshipLayer = ({ relationships, tables }) => {
         let startSymbol, endSymbol;
 
         // Lógica para los nuevos tipos de relación de diagrama de clases
-        if (['inheritance', 'composition', 'aggregation', 'association'].includes(rel.type)) {
+        if (
+          ["inheritance", "composition", "aggregation", "association"].includes(
+            rel.type
+          )
+        ) {
           // Para estos diagramas, el símbolo suele ir solo en el extremo final (destino)
           startSymbol = null;
           endSymbol = getDiagramSymbol(endSymbolPos, endDirection, rel.type);
         }
         // Lógica para relaciones de base de datos
-        else if (rel.type === 'one-to-one') {
-          startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, false);
+        else if (rel.type === "one-to-one") {
+          startSymbol = getCardinalitySymbol(
+            startSymbolPos,
+            startDirection,
+            false
+          );
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, false);
-        } else if (rel.type === 'one-to-many') {
-          startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, false);
+        } else if (rel.type === "one-to-many") {
+          startSymbol = getCardinalitySymbol(
+            startSymbolPos,
+            startDirection,
+            false
+          );
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, true);
-        } else if (rel.type === 'many-to-one') {
-          startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, true);
+        } else if (rel.type === "many-to-one") {
+          startSymbol = getCardinalitySymbol(
+            startSymbolPos,
+            startDirection,
+            true
+          );
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, false);
-        } else if (rel.type === 'many-to-many') {
-          startSymbol = getCardinalitySymbol(startSymbolPos, startDirection, true);
+        } else if (rel.type === "many-to-many") {
+          startSymbol = getCardinalitySymbol(
+            startSymbolPos,
+            startDirection,
+            true
+          );
           endSymbol = getCardinalitySymbol(endSymbolPos, endDirection, true);
         } else {
           // Lógica para nuevos tipos de relación UML
-          const isDashed = rel.type === 'dependency' || rel.type === 'realization';
+          const isDashed =
+            rel.type === "dependency" || rel.type === "realization";
           const strokeDasharray = isDashed ? "8, 8" : "none";
 
           // El símbolo de inicio (origen) para Agregación y Composición
-          if (rel.type === 'aggregation' || rel.type === 'composition') {
+          if (rel.type === "aggregation" || rel.type === "composition") {
             startSymbol = (
-              <g transform={`translate(${startSymbolPos.x}, ${startSymbolPos.y}) rotate(${getRotationAngle(startDirection)})`}>
+              <g
+                transform={`translate(${startSymbolPos.x}, ${
+                  startSymbolPos.y
+                }) rotate(${getRotationAngle(startDirection)})`}
+              >
                 <polygon
                   points="-10,0 0,6 10,0 0,-6"
-                  fill={rel.type === 'composition' ? 'black' : 'white'}
+                  fill={rel.type === "composition" ? "black" : "white"}
                   stroke="black"
                   strokeWidth="2"
                 />
@@ -446,12 +770,27 @@ const RelationshipLayer = ({ relationships, tables }) => {
           }
 
           // El símbolo de fin (destino) para Herencia, Dependencia y Asociación
-          if (['generalization', 'realization', 'dependency', 'association'].includes(rel.type)) {
+          if (
+            [
+              "generalization",
+              "realization",
+              "dependency",
+              "association",
+            ].includes(rel.type)
+          ) {
             endSymbol = (
-              <g transform={`translate(${endSymbolPos.x}, ${endSymbolPos.y}) rotate(${getRotationAngle(endDirection)})`}>
+              <g
+                transform={`translate(${endSymbolPos.x}, ${
+                  endSymbolPos.y
+                }) rotate(${getRotationAngle(endDirection)})`}
+              >
                 <polygon
-                  points={rel.type === 'generalization' || rel.type === 'realization' ? "-12,7 0,0 -12,-7" : "-10,5 0,0 -10,-5"}
-                  fill={rel.type === 'generalization' ? 'white' : 'none'}
+                  points={
+                    rel.type === "generalization" || rel.type === "realization"
+                      ? "-12,7 0,0 -12,-7"
+                      : "-10,5 0,0 -10,-5"
+                  }
+                  fill={rel.type === "generalization" ? "white" : "none"}
                   stroke="black"
                   strokeWidth="2"
                 />
@@ -460,18 +799,26 @@ const RelationshipLayer = ({ relationships, tables }) => {
           }
 
           // Sobrescribir el return para manejar líneas punteadas y símbolos UML
-          return <UmlRelationship key={rel.id} points={points} strokeDasharray={strokeDasharray} startSymbol={startSymbol} endSymbol={endSymbol} />;
+          return (
+            <UmlRelationship
+              key={rel.id}
+              points={points}
+              strokeDasharray={strokeDasharray}
+              startSymbol={startSymbol}
+              endSymbol={endSymbol}
+            />
+          );
         }
 
         return (
           <g key={rel.id}>
             {/* Línea principal ORTOGONAL */}
             <polyline
-              points={points.map(p => `${p.x},${p.y}`).join(' ')}
+              points={points.map((p) => `${p.x},${p.y}`).join(" ")}
               fill="none"
               stroke="black"
               strokeWidth="2"
-              strokeDasharray={rel.type === 'dependency' ? "8, 8" : "none"}
+              strokeDasharray={rel.type === "dependency" ? "8, 8" : "none"}
             />
 
             {/* Símbolos de cardinalidad en las posiciones correctas */}
@@ -479,8 +826,20 @@ const RelationshipLayer = ({ relationships, tables }) => {
             {endSymbol}
 
             {/* Puntos de referencia para debugging (opcional) */}
-            <circle cx={startIntersection.x} cy={startIntersection.y} r="3" fill="blue" opacity="0.3" />
-            <circle cx={endIntersection.x} cy={endIntersection.y} r="3" fill="red" opacity="0.3" />
+            <circle
+              cx={startIntersection.x}
+              cy={startIntersection.y}
+              r="3"
+              fill="blue"
+              opacity="0.3"
+            />
+            <circle
+              cx={endIntersection.x}
+              cy={endIntersection.y}
+              r="3"
+              fill="red"
+              opacity="0.3"
+            />
           </g>
         );
       })}
@@ -489,11 +848,17 @@ const RelationshipLayer = ({ relationships, tables }) => {
 };
 
 // Componente específico para relaciones UML para mayor claridad
-const UmlRelationship = ({ key, points, strokeDasharray, startSymbol, endSymbol }) => {
+const UmlRelationship = ({
+  key,
+  points,
+  strokeDasharray,
+  startSymbol,
+  endSymbol,
+}) => {
   return (
     <g key={key}>
       <polyline
-        points={points.map(p => `${p.x},${p.y}`).join(' ')}
+        points={points.map((p) => `${p.x},${p.y}`).join(" ")}
         fill="none"
         stroke="black"
         strokeWidth="2"
@@ -508,13 +873,13 @@ const UmlRelationship = ({ key, points, strokeDasharray, startSymbol, endSymbol 
 // Función para obtener el ángulo de rotación para los símbolos
 const getRotationAngle = (direction) => {
   switch (direction) {
-    case 'left':
+    case "left":
       return 180;
-    case 'down':
+    case "down":
       return 90;
-    case 'up':
+    case "up":
       return 270;
-    case 'right':
+    case "right":
     default:
       return 0;
   }
@@ -527,7 +892,7 @@ const generateSpringBootCodePreview = (tables, relationships) => {
   }
 
   let code = "// Previsualización de Código Spring Boot (Entidades)\n\n";
-  const tableMap = new Map(tables.map(t => [t.id, t]));
+  const tableMap = new Map(tables.map((t) => [t.id, t]));
 
   // Mapa para construir el contenido de cada entidad
   const entityContents = new Map();
@@ -535,9 +900,9 @@ const generateSpringBootCodePreview = (tables, relationships) => {
   // 1. Primera pasada: Generar atributos base de cada entidad
   for (const table of tables) {
     const entityName = table.name;
-    let imports = new Set(['import javax.persistence.*;']);
-    let attributes = '';
-    const pkColumn = table.columns.find(c => c.constraints.includes('PK'));
+    let imports = new Set(["import javax.persistence.*;"]);
+    let attributes = "";
+    const pkColumn = table.columns.find((c) => c.constraints.includes("PK"));
 
     if (pkColumn) {
       attributes += `    @Id\n`;
@@ -548,22 +913,29 @@ const generateSpringBootCodePreview = (tables, relationships) => {
     }
 
     for (const col of table.columns) {
-      if (!col.constraints.includes('PK')) {
+      if (!col.constraints.includes("PK")) {
         // Simplificación para el tipo de dato
-        const javaType = col.type.includes('VARCHAR') || col.type.includes('TEXT') ? 'String' :
-          col.type.includes('INT') ? 'Integer' :
-            col.type.includes('DECIMAL') || col.type.includes('FLOAT') ? 'Double' :
-              col.type.includes('DATE') ? 'java.time.LocalDate' :
-                col.type.includes('BOOLEAN') ? 'Boolean' : 'Object';
+        const javaType =
+          col.type.includes("VARCHAR") || col.type.includes("TEXT")
+            ? "String"
+            : col.type.includes("INT")
+            ? "Integer"
+            : col.type.includes("DECIMAL") || col.type.includes("FLOAT")
+            ? "Double"
+            : col.type.includes("DATE")
+            ? "java.time.LocalDate"
+            : col.type.includes("BOOLEAN")
+            ? "Boolean"
+            : "Object";
 
-        if (javaType.includes('LocalDate')) {
-          imports.add('import java.time.LocalDate;');
+        if (javaType.includes("LocalDate")) {
+          imports.add("import java.time.LocalDate;");
         }
 
         attributes += `    private ${javaType} ${col.name};\n`;
       }
     }
-    entityContents.set(entityName, { imports, attributes, relations: '' });
+    entityContents.set(entityName, { imports, attributes, relations: "" });
   }
 
   // 2. Segunda pasada: Añadir relaciones
@@ -574,39 +946,40 @@ const generateSpringBootCodePreview = (tables, relationships) => {
     if (fromTable && toTable) {
       const startEntity = entityContents.get(fromTable.name);
       const endEntityName = toTable.name;
-      const endEntityNameLower = endEntityName.charAt(0).toLowerCase() + endEntityName.slice(1);
+      const endEntityNameLower =
+        endEntityName.charAt(0).toLowerCase() + endEntityName.slice(1);
 
       if (startEntity) {
         switch (rel.type) {
           // Relaciones de Base de Datos
-          case 'one-to-one':
+          case "one-to-one":
             startEntity.relations += `\n    @OneToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
             break;
-          case 'one-to-many':
-            startEntity.imports.add('import java.util.List;');
+          case "one-to-many":
+            startEntity.imports.add("import java.util.List;");
             startEntity.relations += `\n    @OneToMany\n    @JoinColumn(name = "${fromTable.name.toLowerCase()}_id")\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
-          case 'many-to-many':
-            startEntity.imports.add('import java.util.List;');
+          case "many-to-many":
+            startEntity.imports.add("import java.util.List;");
             startEntity.relations += `\n    @ManyToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
-          case 'many-to-one':
+          case "many-to-one":
             startEntity.relations += `\n    @ManyToOne\n    @JoinColumn(name = "${endEntityNameLower}_id")\n    private ${endEntityName} ${endEntityNameLower};`;
             break;
 
           // Relaciones de Diagrama de Clases
-          case 'inheritance':
+          case "inheritance":
             startEntity.extendsClass = endEntityName; // Marcar para herencia
             // No se añade anotación para este caso.
             break;
-          case 'composition':
-            startEntity.imports.add('import java.util.List;');
-            startEntity.imports.add('import javax.persistence.CascadeType;');
+          case "composition":
+            startEntity.imports.add("import java.util.List;");
+            startEntity.imports.add("import javax.persistence.CascadeType;");
             startEntity.relations += `\n    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
-          case 'aggregation':
-          case 'association':
-            startEntity.imports.add('import java.util.List;');
+          case "aggregation":
+          case "association":
+            startEntity.imports.add("import java.util.List;");
             startEntity.relations += `\n    @OneToMany\n    private List<${endEntityName}> ${endEntityNameLower}List;`;
             break;
         }
@@ -616,8 +989,12 @@ const generateSpringBootCodePreview = (tables, relationships) => {
 
   // 3. Tercera pasada: Construir el string final
   for (const [entityName, content] of entityContents.entries()) {
-    const importStatements = Array.from(content.imports).map(i => `${i};`).join('\n');
-    const extendsClause = content.extendsClass ? ` extends ${content.extendsClass}` : '';
+    const importStatements = Array.from(content.imports)
+      .map((i) => `${i};`)
+      .join("\n");
+    const extendsClause = content.extendsClass
+      ? ` extends ${content.extendsClass}`
+      : "";
     code += `${importStatements}\n\n@Entity\npublic class ${entityName}${extendsClause} {\n\n${content.attributes}${content.relations}\n}\n\n`;
   }
 
@@ -632,14 +1009,14 @@ export const ChantSelect = () => {
   const [tables, setTables] = useState([]);
   const [relationships, setRelationships] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [activePanel, setActivePanel] = useState('components');
+  const [activePanel, setActivePanel] = useState("components");
   const [relationshipStartPoint, setRelationshipStartPoint] = useState(null);
-  const [activeTool, setActiveTool] = useState('select');
+  const [activeTool, setActiveTool] = useState("select");
   const [showPreview, setShowPreview] = useState(false);
   const [editingTarget, setEditingTarget] = useState(null);
-  const [relationType, setRelationType] = useState('one-to-many');
+  const [relationType, setRelationType] = useState("one-to-many");
 
-  const [mode, setMode] = useState({ name: 'IDLE' });
+  const [mode, setMode] = useState({ name: "IDLE" });
   const initialPos = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
@@ -660,16 +1037,19 @@ export const ChantSelect = () => {
     if (socket) {
       const handleDiagramUpdate = (data) => {
         // Asegurarse de que la actualización es para el grupo activo y no es un eco del propio cliente.
-        if (data.groupId === chatState.grupoActivo && data.senderId !== socket.id) {
+        if (
+          data.groupId === chatState.grupoActivo &&
+          data.senderId !== socket.id
+        ) {
           setTables(data.tables || []);
           setRelationships(data.relationships || []);
         }
       };
-      socket.on('diagram:updated', handleDiagramUpdate);
+      socket.on("diagram:updated", handleDiagramUpdate);
     }
     return () => {
       if (socket) {
-        socket.off('diagram:updated');
+        socket.off("diagram:updated");
       }
     };
   }, [socket, chatState.grupoActivo]);
@@ -678,10 +1058,17 @@ export const ChantSelect = () => {
   const history = useRef([{ tables: [], relationships: [] }]);
   const historyIndex = useRef(0);
 
-  const updateDesignAndHistory = (newTables, newRelationships, isIntermediate = false) => {
+  const updateDesignAndHistory = (
+    newTables,
+    newRelationships,
+    isIntermediate = false
+  ) => {
     const currentDesign = history.current[historyIndex.current];
-    if (JSON.stringify(newTables) === JSON.stringify(currentDesign.tables) &&
-      JSON.stringify(newRelationships) === JSON.stringify(currentDesign.relationships)) {
+    if (
+      JSON.stringify(newTables) === JSON.stringify(currentDesign.tables) &&
+      JSON.stringify(newRelationships) ===
+        JSON.stringify(currentDesign.relationships)
+    ) {
       return;
     }
 
@@ -698,11 +1085,11 @@ export const ChantSelect = () => {
     // Transmitir por socket si hay un grupo activo
     if (chatState.grupoActivo && !isIntermediate) {
       setTimeout(() => {
-        socket.emit('diagram:update', {
+        socket.emit("diagram:update", {
           groupId: chatState.grupoActivo,
           tables: newTables,
           relationships: newRelationships,
-          senderId: socket.id // Incluir senderId para evitar ecos
+          senderId: socket.id, // Incluir senderId para evitar ecos
         });
       }, 0);
     }
@@ -734,15 +1121,15 @@ export const ChantSelect = () => {
       columns: [
         {
           id: `col-${Date.now()}`,
-          name: 'id',
-          type: 'INT',
-          constraints: ['PK']
+          name: "id",
+          type: "INT",
+          constraints: ["PK"],
         },
         {
           id: `col-${Date.now() + 1}`,
-          name: 'nombre',
-          type: 'VARCHAR(255)',
-          constraints: []
+          name: "nombre",
+          type: "VARCHAR(255)",
+          constraints: [],
         },
       ],
       top: position.y,
@@ -751,25 +1138,25 @@ export const ChantSelect = () => {
 
     updateDesignAndHistory([...tables, newTable], relationships);
     setSelectedId(newTable.id);
-    setActiveTool('select');
+    setActiveTool("select");
     setEditingTarget(`${newTable.id}-name`);
   };
 
   // Manejar creación de relaciones
   const handleStartRelation = () => {
-    if (selectedId && tables.find(t => t.id === selectedId)) {
-      setMode({ name: 'DRAWING_RELATION', startTableId: selectedId });
-      setActiveTool('relationship');
+    if (selectedId && tables.find((t) => t.id === selectedId)) {
+      setMode({ name: "DRAWING_RELATION", startTableId: selectedId });
+      setActiveTool("relationship");
     }
   };
 
   const handleRelationshipCreation = (endTable) => {
     if (!mode.startTableId || mode.startTableId === endTable.id) {
-      setMode({ name: 'IDLE' });
+      setMode({ name: "IDLE" });
       return;
     }
 
-    const startTable = tables.find(t => t.id === mode.startTableId);
+    const startTable = tables.find((t) => t.id === mode.startTableId);
     if (!startTable) return;
 
     const startCenter = getTableCenter(startTable);
@@ -783,34 +1170,34 @@ export const ChantSelect = () => {
       x1: startCenter.x,
       y1: startCenter.y,
       x2: endCenter.x,
-      y2: endCenter.y
+      y2: endCenter.y,
     };
 
     updateDesignAndHistory(tables, [...relationships, newRelationship]);
-    setMode({ name: 'IDLE' });
-    setActiveTool('select');
+    setMode({ name: "IDLE" });
+    setActiveTool("select");
     setSelectedId(newRelationship.id);
   };
 
   // Manejar eventos del canvas
   const handleCanvasClick = (e) => {
     if (e.target === canvasRef.current) {
-      if (activeTool === 'class') {
+      if (activeTool === "class") {
         const rect = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         addTable({ x, y });
       }
 
-      if (activeTool === 'relationship') {
-        setMode({ name: 'IDLE' });
-        setActiveTool('select');
+      if (activeTool === "relationship") {
+        setMode({ name: "IDLE" });
+        setActiveTool("select");
       }
 
-      if (activeTool === 'select') {
+      if (activeTool === "select") {
         setSelectedId(null);
         setEditingTarget(null);
-        setMode({ name: 'IDLE' });
+        setMode({ name: "IDLE" });
       }
     }
   };
@@ -819,12 +1206,12 @@ export const ChantSelect = () => {
   const handleMouseDownOnTable = (e, tableId) => {
     e.stopPropagation();
 
-    if (mode.name === 'DRAWING_RELATION') {
+    if (mode.name === "DRAWING_RELATION") {
       if (mode.startTableId && mode.startTableId !== tableId) {
-        handleRelationshipCreation(tables.find(t => t.id === tableId));
+        handleRelationshipCreation(tables.find((t) => t.id === tableId));
       }
     } else {
-      setMode({ name: 'DRAGGING', tableId });
+      setMode({ name: "DRAGGING", tableId });
       const canvasRect = canvasRef.current.getBoundingClientRect();
       initialPos.current = {
         x: e.clientX - canvasRect.left,
@@ -835,7 +1222,7 @@ export const ChantSelect = () => {
   };
 
   const handleMouseMove = (e) => {
-    if (mode.name !== 'DRAGGING') return;
+    if (mode.name !== "DRAGGING") return;
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
     const currentX = e.clientX - canvasRect.left;
@@ -844,12 +1231,12 @@ export const ChantSelect = () => {
     const deltaX = currentX - initialPos.current.x;
     const deltaY = currentY - initialPos.current.y;
 
-    const newTables = tables.map(table => {
+    const newTables = tables.map((table) => {
       if (table.id === mode.tableId) {
         return {
           ...table,
           left: table.left + deltaX,
-          top: table.top + deltaY
+          top: table.top + deltaY,
         };
       }
       return table;
@@ -860,8 +1247,8 @@ export const ChantSelect = () => {
   };
 
   const handleMouseUp = () => {
-    if (mode.name === 'DRAGGING') {
-      setMode({ name: 'TABLE_SELECTED', tableId: mode.tableId });
+    if (mode.name === "DRAGGING") {
+      setMode({ name: "TABLE_SELECTED", tableId: mode.tableId });
       // Guardar en historial y emitir al soltar
       updateDesignAndHistory(tables, relationships);
     }
@@ -869,7 +1256,7 @@ export const ChantSelect = () => {
 
   // Funciones para modificar tablas (se mantienen igual)
   const handleNameChange = (tableId, newName) => {
-    const newTables = tables.map(table =>
+    const newTables = tables.map((table) =>
       table.id === tableId ? { ...table, name: newName } : table
     );
     updateDesignAndHistory(newTables, relationships);
@@ -877,9 +1264,9 @@ export const ChantSelect = () => {
   };
 
   const handleColumnChange = (tableId, columnId, field, newValue) => {
-    const newTables = tables.map(table => {
+    const newTables = tables.map((table) => {
       if (table.id === tableId) {
-        const newColumns = table.columns.map(col =>
+        const newColumns = table.columns.map((col) =>
           col.id === columnId ? { ...col, [field]: newValue } : col
         );
         return { ...table, columns: newColumns };
@@ -890,13 +1277,13 @@ export const ChantSelect = () => {
   };
 
   const handleAddColumn = (tableId) => {
-    const newTables = tables.map(table => {
+    const newTables = tables.map((table) => {
       if (table.id === tableId) {
         const newColumn = {
           id: `col-${Date.now()}`,
-          name: 'nueva_columna',
-          type: 'VARCHAR(255)',
-          constraints: []
+          name: "nueva_columna",
+          type: "VARCHAR(255)",
+          constraints: [],
         };
         return { ...table, columns: [...table.columns, newColumn] };
       }
@@ -907,10 +1294,10 @@ export const ChantSelect = () => {
   };
 
   const handleDeleteColumn = (tableId, columnId) => {
-    const newTables = tables.map(table => {
+    const newTables = tables.map((table) => {
       if (table.id === tableId) {
-        const newColumns = table.columns.filter(col =>
-          !(col.id === columnId && !col.constraints.includes('PK'))
+        const newColumns = table.columns.filter(
+          (col) => !(col.id === columnId && !col.constraints.includes("PK"))
         );
         return { ...table, columns: newColumns };
       }
@@ -920,16 +1307,16 @@ export const ChantSelect = () => {
   };
 
   const handleSetPrimaryKey = (tableId, columnId) => {
-    const newTables = tables.map(table => {
+    const newTables = tables.map((table) => {
       if (table.id === tableId) {
-        const newColumns = table.columns.map(col => ({
+        const newColumns = table.columns.map((col) => ({
           ...col,
-          constraints: col.constraints.filter(c => c !== 'PK')
+          constraints: col.constraints.filter((c) => c !== "PK"),
         }));
 
-        const column = newColumns.find(col => col.id === columnId);
+        const column = newColumns.find((col) => col.id === columnId);
         if (column) {
-          column.constraints.push('PK');
+          column.constraints.push("PK");
         }
 
         return { ...table, columns: newColumns };
@@ -941,25 +1328,25 @@ export const ChantSelect = () => {
 
   const handleDeleteTable = () => {
     if (selectedId) {
-      const newTables = tables.filter(t => t.id !== selectedId);
-      const newRelationships = relationships.filter(rel =>
-        rel.fromTableId !== selectedId && rel.toTableId !== selectedId
+      const newTables = tables.filter((t) => t.id !== selectedId);
+      const newRelationships = relationships.filter(
+        (rel) => rel.fromTableId !== selectedId && rel.toTableId !== selectedId
       );
       updateDesignAndHistory(newTables, newRelationships);
       setSelectedId(null);
-      setMode({ name: 'IDLE' });
+      setMode({ name: "IDLE" });
     }
   };
 
   const duplicateTable = () => {
     if (selectedId) {
-      const tableToDuplicate = tables.find(t => t.id === selectedId);
+      const tableToDuplicate = tables.find((t) => t.id === selectedId);
       if (tableToDuplicate) {
         const newTable = {
           ...tableToDuplicate,
           id: `table-${Date.now()}`,
           top: tableToDuplicate.top + 20,
-          left: tableToDuplicate.left + 20
+          left: tableToDuplicate.left + 20,
         };
         updateDesignAndHistory([...tables, newTable], relationships);
         setSelectedId(newTable.id);
@@ -968,7 +1355,7 @@ export const ChantSelect = () => {
   };
 
   const handleSaveDiagram = async () => {
-    if (!chatState.grupoActivo) return alert('No hay grupo seleccionado');
+    if (!chatState.grupoActivo) return alert("No hay grupo seleccionado");
 
     try {
       const payload = {
@@ -976,22 +1363,22 @@ export const ChantSelect = () => {
           tables: tables,
           relationships: relationships,
           canvasWidth: 1000,
-          canvasHeight: 2000
-        }
+          canvasHeight: 2000,
+        },
       };
 
-      const token = localStorage.getItem('token') || '';
+      const token = localStorage.getItem("token") || "";
       const url = `${process.env.REACT_APP_API_URL}/grupos/${chatState.grupoActivo}/canvas`;
 
-      console.log('Enviando datos al servidor:', payload);
+      console.log("Enviando datos al servidor:", payload);
 
       const resp = await fetch(url, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'x-token': token
+          "Content-Type": "application/json",
+          "x-token": token,
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!resp.ok) {
@@ -1002,29 +1389,32 @@ export const ChantSelect = () => {
       const body = await resp.json();
 
       if (body.ok) {
-        alert('¡Diagrama guardado!');
+        alert("¡Diagrama guardado!");
       } else {
         alert(`Error: ${body.msg}`);
       }
     } catch (error) {
-      console.error('Error de conexión al guardar:', error);
+      console.error("Error de conexión al guardar:", error);
       alert(`Error de conexión al guardar: ${error.message}`);
     }
   };
 
   const handleExportCode = async () => {
     if (!chatState.grupoActivo) {
-      return alert('Por favor, seleccione un grupo para generar el código.');
+      return alert("Por favor, seleccione un grupo para generar el código.");
     }
 
     try {
-      const token = localStorage.getItem('token') || '';
-      const resp = await fetch(`${process.env.REACT_APP_API_URL}/grupos/${chatState.grupoActivo}/generar`, {
-        method: 'GET',
-        headers: {
-          'x-token': token,
-        },
-      });
+      const token = localStorage.getItem("token") || "";
+      const resp = await fetch(
+        `${process.env.REACT_APP_API_URL}/grupos/${chatState.grupoActivo}/generar`,
+        {
+          method: "GET",
+          headers: {
+            "x-token": token,
+          },
+        }
+      );
 
       if (!resp.ok) {
         // Leer el cuerpo del error una sola vez como texto.
@@ -1032,77 +1422,85 @@ export const ChantSelect = () => {
         try {
           // Intentar parsear el texto como JSON.
           const jsonError = JSON.parse(errorText);
-          throw new Error(jsonError.msg || 'Error desconocido en el servidor.');
+          throw new Error(jsonError.msg || "Error desconocido en el servidor.");
         } catch (e) {
           // Si falla el parseo, es porque el error no era JSON (probablemente HTML).
-          throw new Error(`Error del servidor: ${errorText.substring(0, 100)}...`);
+          throw new Error(
+            `Error del servidor: ${errorText.substring(0, 100)}...`
+          );
         }
       }
 
       // Obtener el nombre del archivo desde los headers si está disponible
-      const contentDisposition = resp.headers.get('content-disposition');
-      let filename = 'proyecto.zip';
-      if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+      const contentDisposition = resp.headers.get("content-disposition");
+      let filename = "proyecto.zip";
+      if (
+        contentDisposition &&
+        contentDisposition.indexOf("attachment") !== -1
+      ) {
         const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
         const matches = filenameRegex.exec(contentDisposition);
         if (matches != null && matches[1]) {
-          filename = matches[1].replace(/['"]/g, '');
+          filename = matches[1].replace(/['"]/g, "");
         }
       }
 
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
     } catch (error) {
-      console.error('Error al exportar el código:', error);
+      console.error("Error al exportar el código:", error);
       alert(`No se pudo exportar el código: ${error.message}`);
     }
   };
 
   const handleExportFlutterCode = async () => {
     if (!chatState.grupoActivo) {
-      return alert('Por favor, seleccione un grupo para generar el frontend.');
+      return alert("Por favor, seleccione un grupo para generar el frontend.");
     }
 
     try {
-      const token = localStorage.getItem('token') || '';
+      const token = localStorage.getItem("token") || "";
       // Llamada al nuevo endpoint para Flutter
-      const resp = await fetch(`${process.env.REACT_APP_API_URL}/grupos/${chatState.grupoActivo}/generar-flutter`, {
-        method: 'GET',
-        headers: {
-          'x-token': token,
-        },
-      });
+      const resp = await fetch(
+        `${process.env.REACT_APP_API_URL}/grupos/${chatState.grupoActivo}/generar-flutter`,
+        {
+          method: "GET",
+          headers: {
+            "x-token": token,
+          },
+        }
+      );
 
       if (!resp.ok) {
         const errorText = await resp.text();
         try {
           const jsonError = JSON.parse(errorText);
-          throw new Error(jsonError.msg || 'Error desconocido en el servidor.');
+          throw new Error(jsonError.msg || "Error desconocido en el servidor.");
         } catch (e) {
-          throw new Error(`Error del servidor: ${errorText.substring(0, 150)}...`);
+          throw new Error(
+            `Error del servidor: ${errorText.substring(0, 150)}...`
+          );
         }
       }
 
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'frontend_flutter.zip'; // Nombre del archivo de descarga
+      a.download = "frontend_flutter.zip"; // Nombre del archivo de descarga
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
     } catch (error) {
-      console.error('Error al exportar el código de Flutter:', error);
+      console.error("Error al exportar el código de Flutter:", error);
       alert(`No se pudo exportar el código de Flutter: ${error.message}`);
     }
   };
@@ -1112,28 +1510,50 @@ export const ChantSelect = () => {
       <div className="toolbar">
         <div className="logo">🎨 PageBuilder Pro</div>
         <div className="toolbar-actions">
-          <button onClick={undo} disabled={historyIndex.current === 0} className="toolbar-btn">
+          <button
+            onClick={undo}
+            disabled={historyIndex.current === 0}
+            className="toolbar-btn"
+          >
             ↩️ Deshacer
           </button>
-          <button onClick={redo} disabled={historyIndex.current >= history.current.length - 1} className="toolbar-btn">
+          <button
+            onClick={redo}
+            disabled={historyIndex.current >= history.current.length - 1}
+            className="toolbar-btn"
+          >
             ↪️ Rehacer
           </button>
           <div className="separator"></div>
-          <button onClick={duplicateTable} disabled={!selectedId} className="toolbar-btn">
+          <button
+            onClick={duplicateTable}
+            disabled={!selectedId}
+            className="toolbar-btn"
+          >
             📋 Duplicar
           </button>
-          <button onClick={handleDeleteTable} disabled={!selectedId} className="toolbar-btn">
+          <button
+            onClick={handleDeleteTable}
+            disabled={!selectedId}
+            className="toolbar-btn"
+          >
             🗑️ Eliminar
           </button>
           <div className="separator"></div>
           <button onClick={handleSaveDiagram} className="toolbar-btn">
             💾 Guardar
           </button>
-          <button onClick={() => alert('Funcionalidad de carga no implementada.')} className="toolbar-btn">
+          <button
+            onClick={() => alert("Funcionalidad de carga no implementada.")}
+            className="toolbar-btn"
+          >
             📂 Cargar
           </button>
           <div className="separator"></div>
-          <button onClick={() => setShowPreview(!showPreview)} className={`toolbar-btn ${showPreview ? 'active' : ''}`}>
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className={`toolbar-btn ${showPreview ? "active" : ""}`}
+          >
             👁️ {showPreview ? "Editar" : "Vista previa"}
           </button>
         </div>
@@ -1142,31 +1562,56 @@ export const ChantSelect = () => {
       <div className="main-container">
         <div className="left-panel">
           <div className="panel-tabs">
-            <button onClick={() => setActivePanel('components')} className={`tab-btn ${activePanel === 'components' ? 'active' : ''}`}>
+            <button
+              onClick={() => setActivePanel("components")}
+              className={`tab-btn ${
+                activePanel === "components" ? "active" : ""
+              }`}
+            >
               Componentes
             </button>
-            <button onClick={() => setActivePanel('properties')} className={`tab-btn ${activePanel === 'properties' ? 'active' : ''}`}>
+            <button
+              onClick={() => setActivePanel("properties")}
+              className={`tab-btn ${
+                activePanel === "properties" ? "active" : ""
+              }`}
+            >
               Propiedades
             </button>
-            <button onClick={() => setActivePanel('code')} className={`tab-btn ${activePanel === 'code' ? 'active' : ''}`}>
+            <button
+              onClick={() => setActivePanel("code")}
+              className={`tab-btn ${activePanel === "code" ? "active" : ""}`}
+            >
               Código
             </button>
           </div>
           <div className="panel-content">
-            {activePanel === 'components' && (
+            {activePanel === "components" && (
               <div className="components-panel">
                 <h4>Componentes</h4>
                 <div className="component-buttons">
-                  <button onClick={() => setActiveTool('select')} className={`btn ${activeTool === 'select' ? 'active' : ''}`}>
+                  <button
+                    onClick={() => setActiveTool("select")}
+                    className={`btn ${activeTool === "select" ? "active" : ""}`}
+                  >
                     Seleccionar
                   </button>
-                  <button onClick={() => setActiveTool('class')} className={`btn ${activeTool === 'class' ? 'active' : ''}`}>
+                  <button
+                    onClick={() => setActiveTool("class")}
+                    className={`btn ${activeTool === "class" ? "active" : ""}`}
+                  >
                     Tabla
                   </button>
-                  <button onClick={handleStartRelation}
-                    className={`btn ${mode.name === 'DRAWING_RELATION' ? 'active' : ''}`}
-                    disabled={!selectedId}>
-                    {mode.name === 'DRAWING_RELATION' ? 'Selecciona destino' : 'Crear Relación'}
+                  <button
+                    onClick={handleStartRelation}
+                    className={`btn ${
+                      mode.name === "DRAWING_RELATION" ? "active" : ""
+                    }`}
+                    disabled={!selectedId}
+                  >
+                    {mode.name === "DRAWING_RELATION"
+                      ? "Selecciona destino"
+                      : "Crear Relación"}
                   </button>
                 </div>
 
@@ -1174,54 +1619,183 @@ export const ChantSelect = () => {
                   <h6>Tipo de Relación</h6>
                   <div className="relation-types-grid">
                     {/* Relaciones de BD */}
-                    <button type="button" className={`btn btn-sm ${relationType === 'one-to-one' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('one-to-one')}>1 a 1</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'one-to-many' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('one-to-many')}>1 a N</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'many-to-one' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('many-to-one')}>N a 1</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'many-to-many' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setRelationType('many-to-many')}>N a M</button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "one-to-one"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("one-to-one")}
+                    >
+                      1 a 1
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "one-to-many"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("one-to-many")}
+                    >
+                      1 a N
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "many-to-one"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("many-to-one")}
+                    >
+                      N a 1
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "many-to-many"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("many-to-many")}
+                    >
+                      N a M
+                    </button>
 
                     {/* Separador Visual */}
-                    <hr style={{ gridColumn: '1 / -1', margin: '8px 0', borderTop: '1px solid #ccc' }} />
+                    <hr
+                      style={{
+                        gridColumn: "1 / -1",
+                        margin: "8px 0",
+                        borderTop: "1px solid #ccc",
+                      }}
+                    />
 
                     {/* Relaciones de Clases */}
-                    <button type="button" className={`btn btn-sm ${relationType === 'inheritance' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('inheritance')}>Herencia</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'composition' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('composition')}>Composición</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'aggregation' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('aggregation')}>Agregación</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'association' ? 'btn-info' : 'btn-outline-info'}`} onClick={() => setRelationType('association')}>Asociación</button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "inheritance"
+                          ? "btn-info"
+                          : "btn-outline-info"
+                      }`}
+                      onClick={() => setRelationType("inheritance")}
+                    >
+                      Herencia
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "composition"
+                          ? "btn-info"
+                          : "btn-outline-info"
+                      }`}
+                      onClick={() => setRelationType("composition")}
+                    >
+                      Composición
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "aggregation"
+                          ? "btn-info"
+                          : "btn-outline-info"
+                      }`}
+                      onClick={() => setRelationType("aggregation")}
+                    >
+                      Agregación
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "association"
+                          ? "btn-info"
+                          : "btn-outline-info"
+                      }`}
+                      onClick={() => setRelationType("association")}
+                    >
+                      Asociación
+                    </button>
                   </div>
                 </div>
 
                 <div className="mt-3">
                   <h6>Relaciones UML</h6>
                   <div className="btn-group d-flex" role="group">
-                    <button type="button" className={`btn btn-sm ${relationType === 'association' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('association')}>Asociación</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'aggregation' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('aggregation')}>Agregación</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'composition' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('composition')}>Composición</button>
-                    <button type="button" className={`btn btn-sm ${relationType === 'generalization' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setRelationType('generalization')}>Herencia</button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "association"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("association")}
+                    >
+                      Asociación
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "aggregation"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("aggregation")}
+                    >
+                      Agregación
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "composition"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("composition")}
+                    >
+                      Composición
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${
+                        relationType === "generalization"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
+                      onClick={() => setRelationType("generalization")}
+                    >
+                      Herencia
+                    </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {activePanel === 'properties' && (
+            {activePanel === "properties" && (
               <div className="properties-panel">
                 <h4>Propiedades</h4>
                 <p>Seleccione un componente para editar sus propiedades</p>
               </div>
             )}
 
-            {activePanel === 'code' && (
+            {activePanel === "code" && (
               <div className="code-panel">
                 <h4>Código Spring Boot</h4>
                 <pre className="code-preview">
                   {generateSpringBootCodePreview(tables, relationships)}
                 </pre>
-                <div className="d-flex" style={{ gap: '10px' }}>
-                  <button onClick={handleExportCode} className="btn">Exportar Backend (Spring)</button>
-                  <button onClick={handleExportFlutterCode} className="btn btn-info">Exportar Frontend (Flutter)</button>
+                <div className="d-flex" style={{ gap: "10px" }}>
+                  <button onClick={handleExportCode} className="btn">
+                    Exportar Backend (Spring)
+                  </button>
+                  <button
+                    onClick={handleExportFlutterCode}
+                    className="btn btn-info"
+                  >
+                    Exportar Frontend (Flutter)
+                  </button>
                 </div>
               </div>
             )}
@@ -1236,18 +1810,30 @@ export const ChantSelect = () => {
             onMouseUp={handleMouseUp}
             onClick={handleCanvasClick}
             onMouseLeave={handleMouseUp}
-            style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', cursor: mode.name === 'DRAWING_RELATION' ? 'crosshair' : 'default' }}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              overflow: "hidden",
+              cursor:
+                mode.name === "DRAWING_RELATION" ? "crosshair" : "default",
+            }}
           >
             <RelationshipLayer relationships={relationships} tables={tables} />
 
-            {tables.map(table => (
+            {tables.map((table) => (
               <TableComponent
                 key={table.id}
                 tableData={table}
                 isSelected={selectedId === table.id}
-                isRelationSource={mode.name === 'DRAWING_RELATION' && mode.startTableId === table.id}
+                isRelationSource={
+                  mode.name === "DRAWING_RELATION" &&
+                  mode.startTableId === table.id
+                }
                 onMouseDown={handleMouseDownOnTable}
-                onDoubleClick={(target) => setEditingTarget(`${table.id}-${target}`)}
+                onDoubleClick={(target) =>
+                  setEditingTarget(`${table.id}-${target}`)
+                }
                 onNameChange={handleNameChange}
                 onColumnChange={handleColumnChange}
                 onAddColumn={handleAddColumn}
@@ -1263,7 +1849,7 @@ export const ChantSelect = () => {
 
       <style jsx>{`
         .page-builder {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           display: flex;
           flex-direction: column;
           height: 100vh;
