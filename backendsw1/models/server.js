@@ -43,6 +43,7 @@ class Server {
         this.app.use('/api/login', require('../router/auth'));
         this.app.use('/api/mensajes', require('../router/mensajes'));
         this.app.use('/api/grupos', require('../router/grupo'));
+        this.app.use('/api/ia', require('../router/ia'));
     }
 
     // Esta configuración se puede tener aquí o como propieda de clase
