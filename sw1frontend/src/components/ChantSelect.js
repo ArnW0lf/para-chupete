@@ -4,6 +4,7 @@ import "./dashboard.css";
 import { SocketContext } from "../context/SocketContext";
 import { ChatConext } from "../context/chat/ChatContext";
 import { fetchConnToken } from "../helpers/fetch";
+import { UmlAssistant } from "./UmlAssistant";
 
 // Componente para representar una tabla (similar a UmlClass)
 const TableComponent = ({
@@ -1019,6 +1020,7 @@ export const ChantSelect = () => {
   const [mode, setMode] = useState({ name: "IDLE" });
   const initialPos = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   // Cargar datos del grupo activo
   useEffect(() => {
@@ -1277,10 +1279,11 @@ export const ChantSelect = () => {
   };
 
   const handleAddColumn = (tableId) => {
+    const newColId = `col-${Date.now()}`;
     const newTables = tables.map((table) => {
       if (table.id === tableId) {
         const newColumn = {
-          id: `col-${Date.now()}`,
+          id: newColId,
           name: "nueva_columna",
           type: "VARCHAR(255)",
           constraints: [],
@@ -1290,7 +1293,7 @@ export const ChantSelect = () => {
       return table;
     });
     updateDesignAndHistory(newTables, relationships);
-    setEditingTarget(`${tableId}-col-${Date.now()}`);
+    setEditingTarget(`${tableId}-${newColId}`);
   };
 
   const handleDeleteColumn = (tableId, columnId) => {
@@ -1351,6 +1354,23 @@ export const ChantSelect = () => {
         updateDesignAndHistory([...tables, newTable], relationships);
         setSelectedId(newTable.id);
       }
+    }
+  };
+
+  const handleClearCanvas = () => {
+    const confirmClear = window.confirm(
+      "¿Estás seguro de que deseas limpiar todo el canvas? Esta acción no se puede deshacer."
+    );
+
+    if (confirmClear) {
+      // Limpiar todas las tablas y relaciones
+      updateDesignAndHistory([], []);
+      setSelectedId(null);
+      setMode({ name: "IDLE" });
+      setEditingTarget(null);
+
+      // Opcional: mostrar mensaje de confirmación
+      console.log("Canvas limpiado correctamente");
     }
   };
 
@@ -1460,6 +1480,12 @@ export const ChantSelect = () => {
     }
   };
 
+  const handleDiagramGenerated = (diagram) => {
+    const { tables: newTables, relationships: newRelationships } = diagram;
+    updateDesignAndHistory(newTables, newRelationships);
+    setActivePanel("components"); // Opcional: cambiar a otra vista
+  };
+
   const handleExportFlutterCode = async () => {
     if (!chatState.grupoActivo) {
       return alert("Por favor, seleccione un grupo para generar el frontend.");
@@ -1539,6 +1565,14 @@ export const ChantSelect = () => {
           >
             🗑️ Eliminar
           </button>
+          <button
+            onClick={handleClearCanvas}
+            disabled={tables.length === 0}
+            className="toolbar-btn"
+            title="Limpiar todo el canvas"
+          >
+            🧹 Limpiar
+          </button>
           <div className="separator"></div>
           <button onClick={handleSaveDiagram} className="toolbar-btn">
             💾 Guardar
@@ -1555,6 +1589,14 @@ export const ChantSelect = () => {
             className={`toolbar-btn ${showPreview ? "active" : ""}`}
           >
             👁️ {showPreview ? "Editar" : "Vista previa"}
+          </button>
+          <div className="separator"></div>
+          <button
+            onClick={() => setShowAiPanel(!showAiPanel)}
+            className={`toolbar-btn ai-btn ${showAiPanel ? "active" : ""}`}
+            title="Asistente de IA UML"
+          >
+            🤖 IA
           </button>
         </div>
       </div>
@@ -1814,7 +1856,7 @@ export const ChantSelect = () => {
               position: "relative",
               width: "100%",
               height: "100%",
-              overflow: "hidden",
+              overflow: "auto",
               cursor:
                 mode.name === "DRAWING_RELATION" ? "crosshair" : "default",
             }}
@@ -1846,6 +1888,41 @@ export const ChantSelect = () => {
           </div>
         </div>
       </div>
+
+      {/* Panel Lateral del Asistente de IA */}
+      <div className={`ai-side-panel ${showAiPanel ? "open" : ""}`}>
+        <div className="ai-panel-header">
+          <h3>🤖 Asistente de IA UML</h3>
+          <button
+            className="close-panel-btn"
+            onClick={() => setShowAiPanel(false)}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="ai-panel-body">
+          <UmlAssistant
+            currentDiagram={{ tables, relationships }}
+            onDiagramGenerated={(diagram) => {
+              handleDiagramGenerated(diagram);
+              // No cerrar el panel automáticamente para permitir conversación continua
+              // setShowAiPanel(false);
+            }}
+            onUndo={undo}
+            onRedo={redo}
+            onSave={handleSaveDiagram}
+            onExportBackend={handleExportCode}
+          />
+        </div>
+      </div>
+
+      {/* Overlay para cerrar el panel al hacer clic fuera */}
+      {showAiPanel && (
+        <div
+          className="ai-panel-overlay"
+          onClick={() => setShowAiPanel(false)}
+        />
+      )}
 
       <style jsx>{`
         .page-builder {
@@ -1897,6 +1974,15 @@ export const ChantSelect = () => {
         .toolbar-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .toolbar-btn.ai-btn {
+          background-color: rgba(139, 92, 246, 0.2);
+          font-weight: 600;
+        }
+
+        .toolbar-btn.ai-btn:hover {
+          background-color: rgba(139, 92, 246, 0.3);
         }
 
         .separator {
@@ -1988,6 +2074,7 @@ export const ChantSelect = () => {
         .canvas-container {
           flex: 1;
           padding: 20px;
+          height: 100%;
           background-color: #e9e9e9;
           overflow: auto;
         }
@@ -1996,7 +2083,7 @@ export const ChantSelect = () => {
           background-color: #fff;
           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
           height: 100%;
-          min-height: 500px;
+          min-height: 600px;
         }
 
         .code-preview {
@@ -2070,6 +2157,88 @@ export const ChantSelect = () => {
         .btn-outline-info:hover {
           background-color: #17a2b8;
           color: white;
+        }
+
+        /* Estilos del Panel Lateral de IA */
+        .ai-panel-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: transparent;
+          z-index: 9998;
+          pointer-events: auto;
+        }
+
+        .ai-side-panel {
+          position: fixed;
+          top: 0;
+          right: -450px;
+          width: 450px;
+          height: 100vh;
+          background-color: white;
+          box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ai-side-panel.open {
+          right: 0;
+        }
+
+        .ai-panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 25px;
+          border-bottom: 2px solid #e9ecef;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .ai-panel-header h3 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 600;
+        }
+
+        .close-panel-btn {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          font-size: 24px;
+          width: 35px;
+          height: 35px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          line-height: 1;
+        }
+
+        .close-panel-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: rotate(90deg);
+        }
+
+        .ai-panel-body {
+          padding: 0;
+          overflow-y: auto;
+          flex: 1;
+        }
+
+        /* Responsive para pantallas pequeñas */
+        @media (max-width: 768px) {
+          .ai-side-panel {
+            width: 100%;
+            right: -100%;
+          }
         }
       `}</style>
     </div>
