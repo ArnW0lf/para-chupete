@@ -1,0 +1,14 @@
+{
+  "watch": [
+    "controllers",
+    "database",
+    "helpers",
+    "middlewares",
+    "models",
+    "router",
+    "index.js",
+    ".env"
+  ],
+  "ignore": ["temp/**", "temp/*", "*.zip", "node_modules/**"],
+  "ext": "js,json,env"
+}
