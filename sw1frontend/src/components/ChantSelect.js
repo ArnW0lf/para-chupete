@@ -61,9 +61,8 @@ const TableComponent = ({
 
   return (
     <div
-      className={`uml-class-box ${isSelected ? "active" : ""} ${
-        isRelationSource ? "relation-source" : ""
-      }`}
+      className={`uml-class-box ${isSelected ? "active" : ""} ${isRelationSource ? "relation-source" : ""
+        }`}
       style={{
         position: "absolute",
         top: `${tableData.top}px`,
@@ -382,162 +381,53 @@ const RelationshipLayer = ({ relationships, tables }) => {
           finalEndPoint,
         ];
 
-        // Función mejorada para dibujar símbolos de cardinalidad
+        // Función mejorada para dibujar símbolos de cardinalidad (UML 2.5 Standard)
         const getCardinalitySymbol = (position, direction, isMany) => {
           const { x, y } = position;
 
+          // Ajustes finos de posición para el texto basado en la dirección
+          // para que no quede encima de la línea
+          let textX = x;
+          let textY = y;
+
+          switch (direction) {
+            case "right": textX += 5; break;
+            case "left": textX -= 5; break;
+            case "down": textY += 5; break;
+            case "up": textY -= 5; break;
+          }
+
           if (isMany) {
-            // Símbolo de "Muchos" (Pata de gallo)
-            switch (direction) {
-              case "right":
-                return (
-                  <g transform={`translate(${x},${y})`}>
-                    <line
-                      x1="0"
-                      y1="-6"
-                      x2="0"
-                      y2="6"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="0"
-                      y1="-6"
-                      x2="6"
-                      y2="0"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="0"
-                      y1="6"
-                      x2="6"
-                      y2="0"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                  </g>
-                );
-              case "left":
-                return (
-                  <g transform={`translate(${x},${y})`}>
-                    <line
-                      x1="0"
-                      y1="-6"
-                      x2="0"
-                      y2="6"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="0"
-                      y1="-6"
-                      x2="-6"
-                      y2="0"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="0"
-                      y1="6"
-                      x2="-6"
-                      y2="0"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                  </g>
-                );
-              case "down":
-                return (
-                  <g transform={`translate(${x},${y})`}>
-                    <line
-                      x1="-6"
-                      y1="0"
-                      x2="6"
-                      y2="0"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="-6"
-                      y1="0"
-                      x2="0"
-                      y2="6"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="6"
-                      y1="0"
-                      x2="0"
-                      y2="6"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                  </g>
-                );
-              case "up":
-                return (
-                  <g transform={`translate(${x},${y})`}>
-                    <line
-                      x1="-6"
-                      y1="0"
-                      x2="6"
-                      y2="0"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="-6"
-                      y1="0"
-                      x2="0"
-                      y2="-6"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="6"
-                      y1="0"
-                      x2="0"
-                      y2="-6"
-                      stroke="black"
-                      strokeWidth="2"
-                    />
-                  </g>
-                );
-              default:
-                return null;
-            }
+            // Símbolo de "Muchos" (Asterisco *) - Estándar UML 2.5
+            return (
+              <text
+                x={textX}
+                y={textY}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="20"
+                fontWeight="bold"
+                fill="black"
+              >
+                *
+              </text>
+            );
           } else {
-            // Símbolo de "Uno" (Línea simple)
-            switch (direction) {
-              case "right":
-              case "left":
-                return (
-                  <line
-                    x1={x}
-                    y1={y - 6}
-                    x2={x}
-                    y2={y + 6}
-                    stroke="black"
-                    strokeWidth="2"
-                  />
-                );
-              case "up":
-              case "down":
-                return (
-                  <line
-                    x1={x - 6}
-                    y1={y}
-                    x2={x + 6}
-                    y2={y}
-                    stroke="black"
-                    strokeWidth="2"
-                  />
-                );
-              default:
-                return null;
-            }
+            // Símbolo de "Uno" (Número 1) - Estándar UML 2.5
+            return (
+              <text
+                x={textX}
+                y={textY}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="14"
+                fontWeight="normal"
+                fill="black"
+                dy="1" // Ajuste ligero vertical
+              >
+                1
+              </text>
+            );
           }
         };
 
@@ -552,9 +442,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "right":
                   return (
                     <polygon
-                      points={`${x},${y} ${x + size * 1.5},${y - size} ${
-                        x + size * 1.5
-                      },${y + size}`}
+                      points={`${x},${y} ${x + size * 1.5},${y - size} ${x + size * 1.5
+                        },${y + size}`}
                       fill="white"
                       stroke="black"
                       strokeWidth="2"
@@ -563,9 +452,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "left":
                   return (
                     <polygon
-                      points={`${x},${y} ${x - size * 1.5},${y - size} ${
-                        x - size * 1.5
-                      },${y + size}`}
+                      points={`${x},${y} ${x - size * 1.5},${y - size} ${x - size * 1.5
+                        },${y + size}`}
                       fill="white"
                       stroke="black"
                       strokeWidth="2"
@@ -574,9 +462,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "down":
                   return (
                     <polygon
-                      points={`${x},${y} ${x - size},${y + size * 1.5} ${
-                        x + size
-                      },${y + size * 1.5}`}
+                      points={`${x},${y} ${x - size},${y + size * 1.5} ${x + size
+                        },${y + size * 1.5}`}
                       fill="white"
                       stroke="black"
                       strokeWidth="2"
@@ -585,9 +472,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "up":
                   return (
                     <polygon
-                      points={`${x},${y} ${x - size},${y - size * 1.5} ${
-                        x + size
-                      },${y - size * 1.5}`}
+                      points={`${x},${y} ${x - size},${y - size * 1.5} ${x + size
+                        },${y - size * 1.5}`}
                       fill="white"
                       stroke="black"
                       strokeWidth="2"
@@ -604,9 +490,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "right":
                   return (
                     <polygon
-                      points={`${x},${y} ${x + size},${y - size / 2} ${
-                        x + size * 2
-                      },${y} ${x + size},${y + size / 2}`}
+                      points={`${x},${y} ${x + size},${y - size / 2} ${x + size * 2
+                        },${y} ${x + size},${y + size / 2}`}
                       fill={fill}
                       stroke="black"
                       strokeWidth="2"
@@ -615,9 +500,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "left":
                   return (
                     <polygon
-                      points={`${x},${y} ${x - size},${y - size / 2} ${
-                        x - size * 2
-                      },${y} ${x - size},${y + size / 2}`}
+                      points={`${x},${y} ${x - size},${y - size / 2} ${x - size * 2
+                        },${y} ${x - size},${y + size / 2}`}
                       fill={fill}
                       stroke="black"
                       strokeWidth="2"
@@ -626,9 +510,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "down":
                   return (
                     <polygon
-                      points={`${x},${y} ${x - size / 2},${y + size} ${x},${
-                        y + size * 2
-                      } ${x + size / 2},${y + size}`}
+                      points={`${x},${y} ${x - size / 2},${y + size} ${x},${y + size * 2
+                        } ${x + size / 2},${y + size}`}
                       fill={fill}
                       stroke="black"
                       strokeWidth="2"
@@ -637,9 +520,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "up":
                   return (
                     <polygon
-                      points={`${x},${y} ${x - size / 2},${y - size} ${x},${
-                        y - size * 2
-                      } ${x + size / 2},${y - size}`}
+                      points={`${x},${y} ${x - size / 2},${y - size} ${x},${y - size * 2
+                        } ${x + size / 2},${y - size}`}
                       fill={fill}
                       stroke="black"
                       strokeWidth="2"
@@ -654,9 +536,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "right":
                   return (
                     <polyline
-                      points={`${x + size},${y - size / 2} ${x},${y} ${
-                        x + size
-                      },${y + size / 2}`}
+                      points={`${x + size},${y - size / 2} ${x},${y} ${x + size
+                        },${y + size / 2}`}
                       fill="none"
                       stroke="black"
                       strokeWidth="2"
@@ -665,9 +546,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "left":
                   return (
                     <polyline
-                      points={`${x - size},${y - size / 2} ${x},${y} ${
-                        x - size
-                      },${y + size / 2}`}
+                      points={`${x - size},${y - size / 2} ${x},${y} ${x - size
+                        },${y + size / 2}`}
                       fill="none"
                       stroke="black"
                       strokeWidth="2"
@@ -676,9 +556,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "down":
                   return (
                     <polyline
-                      points={`${x - size / 2},${y + size} ${x},${y} ${
-                        x + size / 2
-                      },${y + size}`}
+                      points={`${x - size / 2},${y + size} ${x},${y} ${x + size / 2
+                        },${y + size}`}
                       fill="none"
                       stroke="black"
                       strokeWidth="2"
@@ -687,9 +566,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
                 case "up":
                   return (
                     <polyline
-                      points={`${x - size / 2},${y - size} ${x},${y} ${
-                        x + size / 2
-                      },${y - size}`}
+                      points={`${x - size / 2},${y - size} ${x},${y} ${x + size / 2
+                        },${y - size}`}
                       fill="none"
                       stroke="black"
                       strokeWidth="2"
@@ -756,9 +634,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
           if (rel.type === "aggregation" || rel.type === "composition") {
             startSymbol = (
               <g
-                transform={`translate(${startSymbolPos.x}, ${
-                  startSymbolPos.y
-                }) rotate(${getRotationAngle(startDirection)})`}
+                transform={`translate(${startSymbolPos.x}, ${startSymbolPos.y
+                  }) rotate(${getRotationAngle(startDirection)})`}
               >
                 <polygon
                   points="-10,0 0,6 10,0 0,-6"
@@ -781,9 +658,8 @@ const RelationshipLayer = ({ relationships, tables }) => {
           ) {
             endSymbol = (
               <g
-                transform={`translate(${endSymbolPos.x}, ${
-                  endSymbolPos.y
-                }) rotate(${getRotationAngle(endDirection)})`}
+                transform={`translate(${endSymbolPos.x}, ${endSymbolPos.y
+                  }) rotate(${getRotationAngle(endDirection)})`}
               >
                 <polygon
                   points={
@@ -920,14 +796,14 @@ const generateSpringBootCodePreview = (tables, relationships) => {
           col.type.includes("VARCHAR") || col.type.includes("TEXT")
             ? "String"
             : col.type.includes("INT")
-            ? "Integer"
-            : col.type.includes("DECIMAL") || col.type.includes("FLOAT")
-            ? "Double"
-            : col.type.includes("DATE")
-            ? "java.time.LocalDate"
-            : col.type.includes("BOOLEAN")
-            ? "Boolean"
-            : "Object";
+              ? "Integer"
+              : col.type.includes("DECIMAL") || col.type.includes("FLOAT")
+                ? "Double"
+                : col.type.includes("DATE")
+                  ? "java.time.LocalDate"
+                  : col.type.includes("BOOLEAN")
+                    ? "Boolean"
+                    : "Object";
 
         if (javaType.includes("LocalDate")) {
           imports.add("import java.time.LocalDate;");
@@ -1069,7 +945,7 @@ export const ChantSelect = () => {
     if (
       JSON.stringify(newTables) === JSON.stringify(currentDesign.tables) &&
       JSON.stringify(newRelationships) ===
-        JSON.stringify(currentDesign.relationships)
+      JSON.stringify(currentDesign.relationships)
     ) {
       return;
     }
@@ -1584,7 +1460,7 @@ export const ChantSelect = () => {
             📂 Cargar
           </button>
           <div className="separator"></div>
-          
+
           {/* 
           <button
             onClick={() => setShowPreview(!showPreview)}
@@ -1610,17 +1486,15 @@ export const ChantSelect = () => {
           <div className="panel-tabs">
             <button
               onClick={() => setActivePanel("components")}
-              className={`tab-btn ${
-                activePanel === "components" ? "active" : ""
-              }`}
+              className={`tab-btn ${activePanel === "components" ? "active" : ""
+                }`}
             >
               Componentes
             </button>
             <button
               onClick={() => setActivePanel("properties")}
-              className={`tab-btn ${
-                activePanel === "properties" ? "active" : ""
-              }`}
+              className={`tab-btn ${activePanel === "properties" ? "active" : ""
+                }`}
             >
               Propiedades
             </button>
@@ -1650,9 +1524,8 @@ export const ChantSelect = () => {
                   </button>
                   <button
                     onClick={handleStartRelation}
-                    className={`btn ${
-                      mode.name === "DRAWING_RELATION" ? "active" : ""
-                    }`}
+                    className={`btn ${mode.name === "DRAWING_RELATION" ? "active" : ""
+                      }`}
                     disabled={!selectedId}
                   >
                     {mode.name === "DRAWING_RELATION"
@@ -1667,44 +1540,40 @@ export const ChantSelect = () => {
                     {/* Relaciones de BD */}
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "one-to-one"
+                      className={`btn btn-sm ${relationType === "one-to-one"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("one-to-one")}
                     >
                       1 a 1
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "one-to-many"
+                      className={`btn btn-sm ${relationType === "one-to-many"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("one-to-many")}
                     >
                       1 a N
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "many-to-one"
+                      className={`btn btn-sm ${relationType === "many-to-one"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("many-to-one")}
                     >
                       N a 1
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "many-to-many"
+                      className={`btn btn-sm ${relationType === "many-to-many"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("many-to-many")}
                     >
                       N a M
@@ -1722,44 +1591,40 @@ export const ChantSelect = () => {
                     {/* Relaciones de Clases */}
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "inheritance"
+                      className={`btn btn-sm ${relationType === "inheritance"
                           ? "btn-info"
                           : "btn-outline-info"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("inheritance")}
                     >
                       Herencia
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "composition"
+                      className={`btn btn-sm ${relationType === "composition"
                           ? "btn-info"
                           : "btn-outline-info"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("composition")}
                     >
                       Composición
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "aggregation"
+                      className={`btn btn-sm ${relationType === "aggregation"
                           ? "btn-info"
                           : "btn-outline-info"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("aggregation")}
                     >
                       Agregación
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "association"
+                      className={`btn btn-sm ${relationType === "association"
                           ? "btn-info"
                           : "btn-outline-info"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("association")}
                     >
                       Asociación
@@ -1772,44 +1637,40 @@ export const ChantSelect = () => {
                   <div className="btn-group d-flex" role="group">
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "association"
+                      className={`btn btn-sm ${relationType === "association"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("association")}
                     >
                       Asociación
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "aggregation"
+                      className={`btn btn-sm ${relationType === "aggregation"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("aggregation")}
                     >
                       Agregación
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "composition"
+                      className={`btn btn-sm ${relationType === "composition"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("composition")}
                     >
                       Composición
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${
-                        relationType === "generalization"
+                      className={`btn btn-sm ${relationType === "generalization"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setRelationType("generalization")}
                     >
                       Herencia
