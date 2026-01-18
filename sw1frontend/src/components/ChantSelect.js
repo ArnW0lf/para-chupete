@@ -1584,12 +1584,16 @@ export const ChantSelect = () => {
             📂 Cargar
           </button>
           <div className="separator"></div>
+          
+          {/* 
           <button
             onClick={() => setShowPreview(!showPreview)}
             className={`toolbar-btn ${showPreview ? "active" : ""}`}
           >
             👁️ {showPreview ? "Editar" : "Vista previa"}
           </button>
+          
+          */}
           <div className="separator"></div>
           <button
             onClick={() => setShowAiPanel(!showAiPanel)}
@@ -1832,12 +1836,16 @@ export const ChantSelect = () => {
                   <button onClick={handleExportCode} className="btn">
                     Exportar Backend (Spring)
                   </button>
+
+                  {/*
+                  
                   <button
                     onClick={handleExportFlutterCode}
                     className="btn btn-info"
                   >
                     Exportar Frontend (Flutter)
                   </button>
+                  */}
                 </div>
               </div>
             )}
