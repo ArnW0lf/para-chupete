@@ -325,10 +325,8 @@ export const UmlAssistant = ({
           );
         } else {
           addSuccessMessage(
-            `Diagrama ${
-              currentDiagram?.tables?.length > 0 ? "reemplazado" : "creado"
-            } con ${diagramaNuevo.tables.length} tabla(s) y ${
-              diagramaNuevo.relationships?.length || 0
+            `Diagrama ${currentDiagram?.tables?.length > 0 ? "reemplazado" : "creado"
+            } con ${diagramaNuevo.tables.length} tabla(s) y ${diagramaNuevo.relationships?.length || 0
             } relación(es)`
           );
         }
@@ -370,6 +368,10 @@ export const UmlAssistant = ({
             name: col.name?.trim() || "",
             constraints: col.constraints || [],
           })),
+          methods: (data.tabla.methods || []).map((method) => ({
+            id: generateId("method"),
+            name: method.name?.trim() || "nuevoMetodo",
+          })),
         };
 
         onDiagramGenerated({
@@ -378,8 +380,7 @@ export const UmlAssistant = ({
         });
 
         addSuccessMessage(
-          `Tabla "${newTable.name}" creada con ${
-            newTable.columns.length
+          `Tabla "${newTable.name}" creada con ${newTable.columns.length
           } columna(s) en posición (${Math.round(top)}, ${Math.round(left)})`
         );
         break;
@@ -495,10 +496,9 @@ export const UmlAssistant = ({
         });
 
         addSuccessMessage(
-          `Tabla "${tableToDelete.name}" eliminada${
-            relatedRelationships.length > 0
-              ? ` junto con ${relatedRelationships.length} relación(es)`
-              : ""
+          `Tabla "${tableToDelete.name}" eliminada${relatedRelationships.length > 0
+            ? ` junto con ${relatedRelationships.length} relación(es)`
+            : ""
           }`
         );
         break;
@@ -830,6 +830,112 @@ export const UmlAssistant = ({
 
         addSuccessMessage(
           `Columna "${data.columnName}" eliminada de tabla "${table.name}"`
+        );
+        break;
+      }
+
+      case "añadir_metodo": {
+        if (!validateDiagram()) return;
+
+        if (!data || !data.tableId || !data.metodo) {
+          setError(
+            "Datos incompletos para añadir método (tableId y metodo requeridos)"
+          );
+          return;
+        }
+
+        if (!data.metodo.name || !data.metodo.name.trim()) {
+          setError("El nombre del método es obligatorio");
+          return;
+        }
+
+        const tableIndex = findTableIndex(data.tableId);
+        if (tableIndex === -1) {
+          setError(`Tabla "${data.tableId}" no encontrada`);
+          return;
+        }
+
+        const updatedTables = [...(currentDiagram?.tables || [])];
+        const table = updatedTables[tableIndex];
+
+        // Verificar si el método ya existe
+        const methodExists = (table.methods || []).some(
+          (m) =>
+            m.name.toLowerCase() === data.metodo.name.trim().toLowerCase()
+        );
+        if (methodExists) {
+          setError(
+            `El método "${data.metodo.name}" ya existe en la tabla "${table.name}"`
+          );
+          return;
+        }
+
+        const newMethod = {
+          id: generateId("method"),
+          name: data.metodo.name.trim(),
+        };
+
+        updatedTables[tableIndex] = {
+          ...table,
+          methods: [...(table.methods || []), newMethod],
+        };
+
+        onDiagramGenerated({
+          ...currentDiagram,
+          tables: updatedTables,
+        });
+
+        addSuccessMessage(
+          `Método "${newMethod.name}" añadido a tabla "${table.name}"`
+        );
+        break;
+      }
+
+      case "eliminar_metodo": {
+        if (!validateDiagram()) return;
+
+        if (!data || !data.tableId || !data.methodName) {
+          setError(
+            "Datos incompletos para eliminar método (tableId y methodName requeridos)"
+          );
+          return;
+        }
+
+        const tableIndex = findTableIndex(data.tableId);
+        if (tableIndex === -1) {
+          setError(`Tabla "${data.tableId}" no encontrada`);
+          return;
+        }
+
+        const updatedTables = [...(currentDiagram?.tables || [])];
+        const table = updatedTables[tableIndex];
+
+        const methodIndex = (table.methods || []).findIndex(
+          (m) => m.name === data.methodName
+        );
+
+        if (methodIndex === -1) {
+          setError(
+            `Método "${data.methodName}" no encontrado en tabla "${table.name}"`
+          );
+          return;
+        }
+
+        const newMethods = [...(table.methods || [])];
+        newMethods.splice(methodIndex, 1);
+
+        updatedTables[tableIndex] = {
+          ...table,
+          methods: newMethods,
+        };
+
+        onDiagramGenerated({
+          ...currentDiagram,
+          tables: updatedTables,
+        });
+
+        addSuccessMessage(
+          `Método "${data.methodName}" eliminado de tabla "${table.name}"`
         );
         break;
       }
@@ -1214,9 +1320,8 @@ El diagrama ha sido generado y está listo para editar.`,
                     }
                   >
                     <i
-                      className={`bi ${
-                        isListening ? "bi-mic-fill" : "bi-mic"
-                      } voice-icon`}
+                      className={`bi ${isListening ? "bi-mic-fill" : "bi-mic"
+                        } voice-icon`}
                     ></i>
                   </button>
                 </div>

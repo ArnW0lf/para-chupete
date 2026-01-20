@@ -1,0 +1,47 @@
+  // --- Manejadores de Métodos ---
+
+  const handleAddMethod = (tableId) => {
+    const newMethodId = `method-${Date.now()}`;
+    const newTables = tables.map((table) => {
+      if (table.id === tableId) {
+        const newMethod = {
+          id: newMethodId,
+          name: "nuevoMetodo",
+        };
+        return {
+          ...table,
+          methods: [...(table.methods || []), newMethod]
+        };
+      }
+      return table;
+    });
+    updateDesignAndHistory(newTables, relationships);
+    setEditingTarget(`${tableId}-${newMethodId}`);
+  };
+
+  const handleDeleteMethod = (tableId, methodId) => {
+    const newTables = tables.map((table) => {
+      if (table.id === tableId) {
+        const newMethods = (table.methods || []).filter(
+          (m) => m.id !== methodId
+        );
+        return { ...table, methods: newMethods };
+      }
+      return table;
+    });
+    updateDesignAndHistory(newTables, relationships);
+  };
+
+  const handleMethodChange = (tableId, methodId, newName) => {
+    const newTables = tables.map((table) => {
+      if (table.id === tableId) {
+        const newMethods = (table.methods || []).map((m) =>
+          m.id === methodId ? { ...m, name: newName } : m
+        );
+        return { ...table, methods: newMethods };
+      }
+      return table;
+    });
+    updateDesignAndHistory(newTables, relationships);
+    setEditingTarget(null);
+  };

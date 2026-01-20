@@ -18,6 +18,10 @@ const TableComponent = ({
   onAddColumn,
   onDeleteColumn,
   onSetPrimaryKey,
+
+  onAddMethod,     // Nuevo prop
+  onDeleteMethod,  // Nuevo prop
+  onMethodChange,  // Nuevo prop
   editingTarget,
   setEditingId,
 }) => {
@@ -45,6 +49,8 @@ const TableComponent = ({
   const isEditingName = editingTarget === `${tableData.id}-name`;
   const isEditingColumn = (columnId) =>
     editingTarget === `${tableData.id}-${columnId}`;
+  const isEditingMethod = (methodId) =>
+    editingTarget === `${tableData.id}-${methodId}`;
 
   // Tipos de datos comunes para base de datos
   const commonDataTypes = [
@@ -190,7 +196,7 @@ const TableComponent = ({
                   onDoubleClick={() => onDoubleClick(col.id)}
                 >
                   <span className="column-name">
-                    {col.name || "sin nombre"}
+                    - {col.name || "sin nombre"}
                   </span>
                   <span className="column-type">{col.type || "sin tipo"}</span>
                   <div className="column-actions">
@@ -216,6 +222,82 @@ const TableComponent = ({
             title="Añadir nueva columna"
           >
             + Añadir columna
+          </button>
+        </div>
+      </div>
+
+      {/* Sección de Métodos (UML 2.5) */}
+      <div className="uml-table-methods" style={{ borderTop: "1px solid #333", padding: "4px 0" }}>
+        {(tableData.methods || []).map((method) => {
+          const editingThisMethod = isEditingMethod(method.id);
+
+          return (
+            <div key={method.id} className="uml-table-method" style={{ padding: "2px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {editingThisMethod ? (
+                <div className="method-editing" style={{ display: "flex", width: "100%", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    defaultValue={method.name}
+                    className="uml-method-input name-input"
+                    onBlur={(e) =>
+                      onMethodChange(
+                        tableData.id,
+                        method.id,
+                        e.target.value
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        e.target.blur();
+                      } else if (e.key === "Escape") {
+                        setEditingId(null);
+                        e.target.blur();
+                      }
+                    }}
+                    placeholder="Nombre del método"
+                    autoFocus
+                    style={{ flex: 1, marginRight: "5px" }}
+                  />
+                  <div className="method-actions">
+                    <button
+                      type="button"
+                      className="delete-column-btn" // Reusamos estilo
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteMethod(tableData.id, method.id);
+                      }}
+                      title="Eliminar método"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="method-display"
+                  onDoubleClick={() => onDoubleClick(method.id)}
+                  style={{ width: "100%", cursor: "text", fontSize: "12px" }}
+                >
+                  <span className="method-name" style={{ fontFamily: "monospace" }}>
+                    + {method.name || "nuevoMetodo"}(void)
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <div className="add-method-row" style={{ padding: "4px 8px" }}>
+          <button
+            className="add-column-btn" // Reusamos estilo
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddMethod(tableData.id);
+            }}
+            title="Añadir nuevo método"
+          >
+            + Añadir método
           </button>
         </div>
       </div>
@@ -1012,6 +1094,7 @@ export const ChantSelect = () => {
       ],
       top: position.y,
       left: position.x,
+      methods: [],
     };
 
     updateDesignAndHistory([...tables, newTable], relationships);
@@ -1203,6 +1286,54 @@ export const ChantSelect = () => {
       return table;
     });
     updateDesignAndHistory(newTables, relationships);
+  };
+
+  // --- Manejadores de Métodos ---
+
+  const handleAddMethod = (tableId) => {
+    const newMethodId = `method-${Date.now()}`;
+    const newTables = tables.map((table) => {
+      if (table.id === tableId) {
+        const newMethod = {
+          id: newMethodId,
+          name: "nuevoMetodo",
+        };
+        return {
+          ...table,
+          methods: [...(table.methods || []), newMethod]
+        };
+      }
+      return table;
+    });
+    updateDesignAndHistory(newTables, relationships);
+    setEditingTarget(`${tableId}-${newMethodId}`);
+  };
+
+  const handleDeleteMethod = (tableId, methodId) => {
+    const newTables = tables.map((table) => {
+      if (table.id === tableId) {
+        const newMethods = (table.methods || []).filter(
+          (m) => m.id !== methodId
+        );
+        return { ...table, methods: newMethods };
+      }
+      return table;
+    });
+    updateDesignAndHistory(newTables, relationships);
+  };
+
+  const handleMethodChange = (tableId, methodId, newName) => {
+    const newTables = tables.map((table) => {
+      if (table.id === tableId) {
+        const newMethods = (table.methods || []).map((m) =>
+          m.id === methodId ? { ...m, name: newName } : m
+        );
+        return { ...table, methods: newMethods };
+      }
+      return table;
+    });
+    updateDesignAndHistory(newTables, relationships);
+    setEditingTarget(null);
   };
 
   const handleDeleteTable = () => {
@@ -1541,8 +1672,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "one-to-one"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("one-to-one")}
                     >
@@ -1551,8 +1682,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "one-to-many"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("one-to-many")}
                     >
@@ -1561,8 +1692,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "many-to-one"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("many-to-one")}
                     >
@@ -1571,8 +1702,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "many-to-many"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("many-to-many")}
                     >
@@ -1592,8 +1723,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "inheritance"
-                          ? "btn-info"
-                          : "btn-outline-info"
+                        ? "btn-info"
+                        : "btn-outline-info"
                         }`}
                       onClick={() => setRelationType("inheritance")}
                     >
@@ -1602,8 +1733,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "composition"
-                          ? "btn-info"
-                          : "btn-outline-info"
+                        ? "btn-info"
+                        : "btn-outline-info"
                         }`}
                       onClick={() => setRelationType("composition")}
                     >
@@ -1612,8 +1743,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "aggregation"
-                          ? "btn-info"
-                          : "btn-outline-info"
+                        ? "btn-info"
+                        : "btn-outline-info"
                         }`}
                       onClick={() => setRelationType("aggregation")}
                     >
@@ -1622,8 +1753,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "association"
-                          ? "btn-info"
-                          : "btn-outline-info"
+                        ? "btn-info"
+                        : "btn-outline-info"
                         }`}
                       onClick={() => setRelationType("association")}
                     >
@@ -1638,8 +1769,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "association"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("association")}
                     >
@@ -1648,8 +1779,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "aggregation"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("aggregation")}
                     >
@@ -1658,8 +1789,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "composition"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("composition")}
                     >
@@ -1668,8 +1799,8 @@ export const ChantSelect = () => {
                     <button
                       type="button"
                       className={`btn btn-sm ${relationType === "generalization"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setRelationType("generalization")}
                     >
@@ -1750,6 +1881,9 @@ export const ChantSelect = () => {
                 onAddColumn={handleAddColumn}
                 onDeleteColumn={handleDeleteColumn}
                 onSetPrimaryKey={handleSetPrimaryKey}
+                onAddMethod={handleAddMethod}
+                onDeleteMethod={handleDeleteMethod}
+                onMethodChange={handleMethodChange}
                 editingTarget={editingTarget}
                 setEditingId={setEditingTarget}
               />

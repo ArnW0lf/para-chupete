@@ -137,8 +137,7 @@ const retryWithBackoff = async (fn, maxRetries = 3, initialDelay = 1000) => {
       if (error.status === 503 || error.status === 429) {
         const delay = initialDelay * Math.pow(2, attempt); // Backoff exponencial
         console.log(
-          `Intento ${
-            attempt + 1
+          `Intento ${attempt + 1
           }/${maxRetries} falló. Reintentando en ${delay}ms...`
         );
 
@@ -187,6 +186,9 @@ const generarDiagramaUML = async (req, res = response) => {
                     *   "name": El nombre del atributo (ej: "nombre").
                     *   "type": El tipo de dato (ej: "VARCHAR(255)", "INT", "TEXT").
                     *   "constraints": Un array de strings para restricciones (ej: ["PK"] para Clave Primaria).
+                *   "methods": Un array de objetos (opcional), donde cada objeto es un método:
+                    *   "id": Un ID único para el método (ej: "meth-1").
+                    *   "name": El nombre del método (ej: "calcularTotal").
 
             2.  **"relationships"**: Un array de objetos. Cada objeto representa una relación y debe tener:
                 *   "id": Un ID único para la relación (ej: "rel-1").
@@ -326,6 +328,9 @@ const generarDiagramaUMLConImagen = async (req, res = response) => {
                 *   "name": El nombre del atributo (ej: "nombre").
                 *   "type": El tipo de dato (ej: "VARCHAR", "INT", "TEXT").
                 *   "constraints": Un array de strings para restricciones (ej: ["PK"]).
+            *   "methods": Un array de objetos (opcional) con:
+                *   "id": ID único
+                *   "name": Nombre del método
 
         2.  **"relationships"**: Un array de objetos. Cada objeto representa una relación y debe tener:
             *   "id": Un ID único para la relación (ej: "rel-1").
@@ -407,11 +412,10 @@ ${contextoDiagrama}
 "${comando}"
 
 **ANÁLISIS DEL CONTEXTO:**
-- ${
-      tieneDiagrama
+- ${tieneDiagrama
         ? `Existe un diagrama con ${diagramaActual.tables.length} tabla(s)`
         : "El diagrama está vacío"
-    }
+      }
 - Si el usuario pide "crear un diagrama de...", "genera un diagrama de...", o describe un sistema completo nuevo, usa la acción "reemplazar_diagrama"
 - Si el usuario pide modificar, añadir, eliminar o ajustar elementos específicos del diagrama actual, usa acciones específicas
 - Si el diagrama está vacío y el usuario describe un sistema, usa "reemplazar_diagrama"
@@ -420,7 +424,7 @@ ${contextoDiagrama}
 
 \`\`\`json
 {
-  "accion": "crear_tabla" | "modificar_tabla" | "eliminar_tabla" | "crear_relacion" | "modificar_relacion" | "eliminar_relacion" | "modificar_columna" | "añadir_columna" | "eliminar_columna" | "deshacer" | "rehacer" | "guardar" | "exportar_backend" | "sugerencia" | "reemplazar_diagrama",
+  "accion": "crear_tabla" | "modificar_tabla" | "eliminar_tabla" | "crear_relacion" | "modificar_relacion" | "eliminar_relacion" | "modificar_columna" | "añadir_columna" | "eliminar_columna" | "añadir_metodo" | "eliminar_metodo" | "deshacer" | "rehacer" | "guardar" | "exportar_backend" | "sugerencia" | "reemplazar_diagrama",
   "explicacion": "Explicación clara de lo que vas a hacer",
   "datos": {
     // Datos específicos según la acción
@@ -538,7 +542,25 @@ ${contextoDiagrama}
    - Añadir restricción: \`"cambios": {"constraints": ["PK", "NOT NULL"]}\`
    - Cambiar tipo y nombre: \`"cambios": {"name": "email", "type": "VARCHAR(255)"}\`
 
-9. **sugerencia**: Dar recomendaciones sin modificar
+10. **añadir_metodo**: Añadir método a tabla existente
+    \`\`\`json
+    {
+      "tableId": "nombre-de-la-tabla",
+      "metodo": {
+        "name": "nombreMetodo"
+      }
+    }
+    \`\`\`
+
+11. **eliminar_metodo**: Eliminar método de tabla
+    \`\`\`json
+    {
+      "tableId": "nombre-de-la-tabla",
+      "methodName": "nombre-metodo"
+    }
+    \`\`\`
+
+12. **sugerencia**: Dar recomendaciones sin modificar
    \`\`\`json
    {
      "mensaje": "Texto con la sugerencia o recomendación"
@@ -644,6 +666,8 @@ ${contextoDiagrama}
 - "Cambia la columna precio de Producto a DECIMAL(10,2)" → modificar_columna con cambios: {type: "DECIMAL(10,2)"}
 - "Renombra la columna user_name a username" → modificar_columna con cambios: {name: "username"}
 - "Añade restricción NOT NULL a la columna email" → modificar_columna con cambios: {constraints: ["NOT NULL"]}
+- "Añade el método calcularTotal a la tabla Pedido" → añadir_metodo con metodo: {name: "calcularTotal"}
+- "Elimina el método validar de Usuario" → eliminar_metodo con methodName: "validar"
 - "Exporta el backend", "Descarga el código Spring", "Genera el backend" → exportar_backend
 - "Limpiar pizarra", "Borrar todo", "Vaciar canvas", "Eliminar todo", "Resetear" → reemplazar_diagrama con diagrama_nuevo: {tables: [], relationships: []}
 
